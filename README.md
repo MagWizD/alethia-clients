@@ -104,4 +104,4 @@ Coming later this week!
 
 ## License
 
-Apache 2.0
+GNU GENERAL PUBLIC LICENSE Version 3
