@@ -1,0 +1,34 @@
+# ── VSCode Extension ──────────────────────────────────────────
+vscode/node_modules/
+vscode/out/
+vscode/dist/
+vscode/*.vsix
+vscode/.vscode-test/
+
+# ── JetBrains Plugin ──────────────────────────────────────────
+jetbrains/.gradle/
+jetbrains/build/
+jetbrains/.idea/
+jetbrains/*.iml
+jetbrains/local.properties
+
+# ── Aletheia Runtime Files ────────────────────────────────────
+# These are generated at runtime on the developer's machine
+# and should never be committed to the extension repo itself
+flaggedRegions.json
+temp_note.json
+
+# ── OS Files ──────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Environment ───────────────────────────────────────────────
+.env
+.env.local
+*.key
+*.pem
+
+# ── Logs ──────────────────────────────────────────────────────
+*.log
+logs/
