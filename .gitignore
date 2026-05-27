@@ -1,9 +1,9 @@
 # ── VSCode Extension ──────────────────────────────────────────
-vscode/node_modules/
-vscode/out/
-vscode/dist/
-vscode/*.vsix
-vscode/.vscode-test/
+_vscode/alethia-extension/node_modules/
+_vscode/alethia-extension/out/
+_vscode/alethia-extension/dist/
+_vscode/alethia-extension/*.vsix
+_vscode/alethia-extension/.vscode-test/
 
 # ── JetBrains Plugin ──────────────────────────────────────────
 jetbrains/.gradle/
