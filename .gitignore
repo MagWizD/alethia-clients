@@ -17,7 +17,7 @@ _jetbrains/.kotlin
 _jetbrains/.run
 _jetbrains/gradle/wrapper/gradle-wrapper.jar
 
-# ── Aletheia Runtime Files ────────────────────────────────────
+# ── Alethia Runtime Files ────────────────────────────────────
 # These are generated at runtime on the developer's machine
 # and should never be committed to the extension repo itself
 flaggedRegions.json
