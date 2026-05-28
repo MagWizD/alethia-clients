@@ -1,0 +1,16 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+    <id>com.alethia.plugin</id>
+    <name>Alethia</name>
+    <vendor>Alethia</vendor>
+    <description><![CDATA[
+        <p><b>Alethia</b> is a passive AI code detection engine for JetBrains IDEs.</p>
+        <p>It monitors for suspicious code insertions, serializes flagged metadata 
+        as git notes on each commit, and pushes those notes to remote so the Themis 
+        reporting engine can surface AI attribution data on incoming pull requests.</p>
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>git4idea</depends>
+
+</idea-plugin>
