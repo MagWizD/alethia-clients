@@ -6,11 +6,16 @@ _vscode/alethia-extension/*.vsix
 _vscode/alethia-extension/.vscode-test/
 
 # ── JetBrains Plugin ──────────────────────────────────────────
-jetbrains/.gradle/
-jetbrains/build/
-jetbrains/.idea/
-jetbrains/*.iml
-jetbrains/local.properties
+_jetbrains/.gradle/
+_jetbrains/build/
+_jetbrains/.idea/
+_jetbrains/*.iml
+_jetbrains/local.properties
+_jetbrains/.DS_store
+_jetbrains/.intellijPlatform
+_jetbrains/.kotlin
+_jetbrains/.run
+_jetbrains/gradle/wrapper/gradle-wrapper.jar
 
 # ── Aletheia Runtime Files ────────────────────────────────────
 # These are generated at runtime on the developer's machine
