@@ -117,7 +117,7 @@ A commit with `extensionActive: true` and `flagCount: 0` means the extension was
  
 ### JetBrains Plugin
  
-- [ ] Configure plugin metadata - `plugin.xml`, `gradle.properties`
+- [X] Configure plugin metadata - `plugin.xml`, `gradle.properties`
 - [ ] Define package structure under `com.alethia`
 - [ ] Define `FlaggedRegion` data class matching VSCode schema
 - [ ] Implement passive text change detection
