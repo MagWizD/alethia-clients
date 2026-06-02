@@ -11,6 +11,6 @@
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
-    <depends>git4idea</depends>
+    <depends>Git4Idea</depends>
 
 </idea-plugin>
