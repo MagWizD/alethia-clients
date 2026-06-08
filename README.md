@@ -120,7 +120,8 @@ A commit with `extensionActive: true` and `flagCount: 0` means the extension was
 - [X] Configure plugin metadata - `plugin.xml`, `gradle.properties`
 - [X] Define package structure under `com.alethia`
 - [X] Define `FlaggedRegion` data class matching VSCode schema
-- [ ] Implement passive text change detection
+- [X] Implement passive text change detection
+- [X] Implement debounce to prevent duplicate flags from large change events
 - [ ] Implement paste interception
 - [ ] Implement session persistence - flags survive IDE restarts
 - [ ] Implement file signing for tamper detection on saved metadata
