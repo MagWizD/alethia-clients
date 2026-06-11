@@ -1,68 +1,42 @@
 package com.alethia.detection.listeners
 
-import com.alethia.config.DetectionConfig
-import com.alethia.session.AlethiaSessionState
-import com.alethia.model.FlaggedRegion
+import com.alethia.detection.AlethiaEventHandler
+import com.alethia.detection.events.DetectionEvent
+import com.alethia.detection.events.EventSource
 import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.fileEditor.FileDocumentManager
-import java.time.Instant
 
-class AlethiaDocumentListener(
-    private val config: DetectionConfig = DetectionConfig()
-): DocumentListener {
+/**
+ * Thin adapter - Listens to document changes and forwards them
+ * to AlethiaEventHandler as DetectionEvent objects.
+ */
+class AlethiaDocumentListener : DocumentListener {
 
-    // Track the lat time any edit was made
+    // Record last time a file document change occurred
     private var lastEditTime = System.currentTimeMillis()
 
-    // Track the last time each file was flagged - this will prevent duplicate
-    // flags from a single paste that IntelliJ may chunk into multiple
-    private val recentlyFlagged = mutableMapOf<String,Long>()
-
-    // Overwrite the documentChanged() function to execute our rule checks
-    // and save the FlaggedRegion if necessary
+    // Submit the event to the AlethiaEventHandler for Rule evaluation
+    // and flag creation.
     override fun documentChanged(event: DocumentEvent) {
         val now = System.currentTimeMillis()
-        val charCount = event.newFragment.length
         val document = event.document
 
-        // Get the file path
-        val file = FileDocumentManager.getInstance()
+        val filePath = FileDocumentManager.getInstance()
             .getFile(document)?.path ?: return
 
-        // Skip git internal files
-        if (file.contains(".git")) return
+        AlethiaEventHandler.submit(
+            DetectionEvent(
+                filePath = filePath,
+                charCount = event.newFragment.length,
+                startLine = document.getLineNumber(event.offset) + 1,
+                endLine = document.getLineNumber(event.offset) +
+                        event.newFragment.count { it == '\n' } + 1,
+                elapsedMs = now - lastEditTime,
+                source = EventSource.DOCUMENT_CHANGE    // Flag this as a general doc change
+            )
+        )
 
-        // Rule1: Large instant insertions
-        // Any single change over the set threshold of chars is definitively paste or AI insertion
-        if (charCount > config.largePasteThreshold) {
-            val lastFlagged = recentlyFlagged[file] ?: 0L
-
-            // Only flag if we haven't flagged this file in the last 2 seconds
-            // this will prevent duplicate flags from a single chunked paste event
-            if (now - lastFlagged > config.debounceWindowMs) {
-                recentlyFlagged[file] = now
-                val elapsedMs = now - lastEditTime
-                val startLine = document.getLineNumber(event.offset) + 1
-                val lineCount = event.newFragment.count { it == '\n' }
-                val endLine = startLine + lineCount
-
-                // Create new FlaggedRegion object
-                val flag = FlaggedRegion(
-                    file = file,
-                    startLine = startLine,
-                    endLine = endLine,
-                    charCount = charCount,
-                    rationale = "Large instant insertion - $charCount chars in ${elapsedMs}ms",
-                    timeStamp = Instant.now().toString()
-                )
-
-                // Save the FlaggedRegion to the session state
-                AlethiaSessionState.addFlag(flag)
-            }
-        }
-
-        // Update last edit time
         lastEditTime = now
     }
 }
