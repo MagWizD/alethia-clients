@@ -1,9 +1,12 @@
-package com.alethia.detection
+package com.alethia.detection.listeners
 
+import com.alethia.config.DetectionConfig
+import com.alethia.session.AlethiaSessionState
 import com.alethia.model.FlaggedRegion
 import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.fileEditor.FileDocumentManager
+import java.time.Instant
 
 class AlethiaDocumentListener(
     private val config: DetectionConfig = DetectionConfig()
@@ -51,7 +54,7 @@ class AlethiaDocumentListener(
                     endLine = endLine,
                     charCount = charCount,
                     rationale = "Large instant insertion - $charCount chars in ${elapsedMs}ms",
-                    timeStamp = java.time.Instant.now().toString()
+                    timeStamp = Instant.now().toString()
                 )
 
                 // Save the FlaggedRegion to the session state

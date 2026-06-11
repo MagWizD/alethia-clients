@@ -1,4 +1,8 @@
-package com.alethia.detection
+package com.alethia.config
+
+/**
+ *
+ */
 
 data class DetectionConfig(
     val largePasteThreshold: Int = 200,

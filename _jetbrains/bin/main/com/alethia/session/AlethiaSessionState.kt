@@ -1,4 +1,4 @@
-package com.alethia.detection
+package com.alethia.session
 
 import com.alethia.model.FlaggedRegion
 
