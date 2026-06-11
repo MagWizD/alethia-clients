@@ -144,7 +144,7 @@ Setup instructions coming soon...working out the process
 
 ## Setup
 
-Coming later this week!
+Coming later!
 
 ---
 
