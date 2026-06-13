@@ -136,6 +136,58 @@ A commit with `extensionActive: true` and `flagCount: 0` means the extension was
 
 ---
 
+## JetBrains Plugin Structure
+
+### File Structure
+
+```
+_jetbrains/src/main
+├── resources/META-INF
+│   └── plugin.xml                            // Plugin configs/dependencies
+└── kotlin/com/alethia
+    ├── config/
+    │   └── DetectionConfig.kt                // Maintainer defined variables/thresholds
+    ├── detection/
+    │   ├── AlethiaEventHandler.kt            // Handles all events and flag creation
+    │   ├── events/
+    │   │   ├── DetectionEvent.kt             // Data wrapper for saving event info
+    │   │   └── EventSource.kt                // Enum class defining heirarchical event sources
+    │   ├── listeners/
+    │   │   ├── AlethiaDocumentListener.kt    // Detects/Submits document changes
+    │   │   └── AlethiaPasteProcessor.kt      // Detects/Submits paste events
+    │   └── rules/
+    │       ├── DetectionRule.kt              // Foundational interface for all Rules
+    │       ├── LargePasteRule.kt             // Rule: Evaluate large paste events
+    │       └── RuleEnginee.kt                // Orchestrates all rule evaluations
+    ├── model/
+    │   └── FlaggedRegion.kt                  // Data wrapper for flagged code sections
+    └── session/
+        └── AlethiaSessionState.kt            // Saves the current session state (FlaggedRegions, etc..)
+```
+
+---
+
+### Architecture & Design
+
+The plugin is a layered event-driven architecture. Each component has a single responsibility and no layer reaches past its immediate neighbor:
+
+- **Listeners** converts raw IntelliJ events into `DetectionEvent` objects and nothing more
+- **AletheiaEventHandler** receives all events, resolves duplicates by source priority, and hands off events to the rule engine
+- **RuleEngine** evaluates events against all registered rules and returns a rationale string if flagged
+- **AletheiaSessionState** accumulates flagged regions until next commit
+
+**Listeners make no decisions**
+
+Keeping listeners as thin adapters means adding a new event source will only requires a new listener file, meaning no existing code changes. The same applies to rules, all we need to do is implement the `DetectionRule` interface and register it in `RuleEngine`, that is all that is needed to add new detection logic.
+
+**Deduplication by source priority**
+
+Both listeners can fire for the same paste event since `AletheiaDocumentListener` fires after `AletheiaPasteProcessor`. The handler solves duplicates by tracking recent paste events per file — if a `CLIPBOARD_PASTE` event arrives, any subsequent `DOCUMENT_CHANGE` for the same file within a short window will be suppressed(We see it but dont act on it). The more specific source always wins, keeps logic clean and prevents duplicates.
+
+**Note:** *This mya need to change later on if future events do not order so smoothly.*
+
+---
+
 ## Contributing
 
 Setup instructions coming soon...working out the process
