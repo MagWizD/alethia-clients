@@ -16,8 +16,13 @@ class AlethiaDocumentListener : DocumentListener {
     // Record last time a file document change occurred
     private var lastEditTime = System.currentTimeMillis()
 
-    // Submit the event to the AlethiaEventHandler for Rule evaluation
-    // and flag creation.
+    /**
+     * Fires after text changes in open docs.
+     * Builds DetectionEvent from the raw change data and
+     * forwards it to AletheiaEventHandler for rules eval.
+     *
+     * @param event     The document event containing the change details
+     */
     override fun documentChanged(event: DocumentEvent) {
         val now = System.currentTimeMillis()
         val document = event.document
@@ -25,6 +30,7 @@ class AlethiaDocumentListener : DocumentListener {
         val filePath = FileDocumentManager.getInstance()
             .getFile(document)?.path ?: return
 
+        // Submit the DetectionEvent to AlethiaEventHandler
         AlethiaEventHandler.submit(
             DetectionEvent(
                 filePath = filePath,

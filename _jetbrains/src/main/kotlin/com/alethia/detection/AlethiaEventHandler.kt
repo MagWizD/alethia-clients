@@ -19,7 +19,7 @@ import com.alethia.session.AlethiaSessionState
 object AlethiaEventHandler {
 
     // Tracks recent paste events by file
-    // This is used to suppress duplicate events from same insertion
+    // Used to suppress duplicate events from same insertion
     private val recentPastes = mutableMapOf<String, Long>()
     private const val PASTE_WINDOW_MS = 500L
 
