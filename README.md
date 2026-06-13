@@ -122,7 +122,7 @@ A commit with `extensionActive: true` and `flagCount: 0` means the extension was
 - [X] Define `FlaggedRegion` data class matching VSCode schema
 - [X] Implement passive text change detection
 - [X] Implement debounce to prevent duplicate flags from large change events
-- [ ] Implement paste interception
+- [X] Implement paste interception
 - [ ] Implement session persistence - flags survive IDE restarts
 - [ ] Implement file signing for tamper detection on saved metadata
 - [ ] Implement commit detection
