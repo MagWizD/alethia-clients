@@ -43,7 +43,7 @@ jobs:
       # Caches downloaded Gradle dependencies between runs.
       # Without this every run will re-download IntelliJ Platform SDK
       # which is unnecessary and slows down the workflow.
-      # The cache key is a hash of the gradle files —
+      # The cache key is a hash of the gradle files,
       # if they change the cache is invalidated and dependencies
       # will re-download.
       - name: Cache Gradle dependencies
@@ -56,4 +56,15 @@ jobs:
           restore-keys: |
             gradle-
 
-     
+      # Linux requires execute permission on shell scripts, use
+      # chmod with '+x' for executable permissions.
+      # gradlew is a shell script, so it needs +x.
+      - name: Make gradlew executable
+        run: chmod +x _jetbrains/gradlew
+
+      # Compile Kotlin source files and package the plugin as a .zip
+      # working-directory tells the runner to cd into _jetbrains/
+      # before running the command
+      - name: Build plugin
+        run: ./gradlew buildPlugin
+        working-directory: _jetbrains
