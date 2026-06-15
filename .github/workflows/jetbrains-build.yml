@@ -47,7 +47,7 @@ jobs:
       # if they change the cache is invalidated and dependencies
       # will re-download.
       - name: Cache Gradle dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.gradle/caches
