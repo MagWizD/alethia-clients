@@ -1,0 +1,59 @@
+# .github/workflows/jetbrains-biuld.yml
+#
+# Builds and verifies the Alethia JetBrains plugin.
+# Triggers only when files inside _jetbrains/ change —
+# VSCode changes do not trigger this workflow action.
+
+name: JetBrains Plugin --- Build
+
+on:
+  push:
+    paths:
+      - '_jetbrains/**'   # only run when jetbrains files change
+  pull_request:
+    paths:
+      - '_jetbrains/**'   # also run on PRs that touch jetbrains files
+
+jobs:
+  build:
+    name: Build and verify plugin
+
+    # ubuntu-latest is the default GitHub Actions runner.
+    # It is free for public repos, fast, and has all build
+    # tools available. 
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # Pulls the repo code into the runner environment
+      # @v4 refers to version 6 of the action, by pinning it to a
+      # version we prevent breaking changes if the action updates
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      # Installs the JDK on the runner.
+      # Temurin is the open source JDK distribution maintained
+      # by Eclipse, it is free and widely used for CI.
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      # Caches downloaded Gradle dependencies between runs.
+      # Without this every run will re-download IntelliJ Platform SDK
+      # which is unnecessary and slows down the workflow.
+      # The cache key is a hash of the gradle files —
+      # if they change the cache is invalidated and dependencies
+      # will re-download.
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('_jetbrains/**/*.gradle*', '_jetbrains/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-
+
+     
