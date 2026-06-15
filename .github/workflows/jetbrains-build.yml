@@ -65,6 +65,6 @@ jobs:
       # Compile Kotlin source files and package the plugin as a .zip
       # working-directory tells the runner to cd into _jetbrains/
       # before running the command
-      - name: Build plugin
-        run: ./gradlew buildPlugin
-        working-directory: _jetbrains
+      # - name: Build plugin
+      #   run: ./gradlew buildPlugin
+      #   working-directory: _jetbrains
