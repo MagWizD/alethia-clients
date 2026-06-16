@@ -1,1 +1,1 @@
-Testing Discord MyRepoBot integration and notifications.
+Test 2.0 for Discord MyRepoBot integration and notifications.
