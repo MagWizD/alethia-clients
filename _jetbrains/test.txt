@@ -1,1 +1,1 @@
-Test 3.0 for Discord MyRepoBot integration and notifications.
+Test 4.0 for Discord MyRepoBot integration and notifications.
