@@ -13,4 +13,15 @@
     <depends>com.intellij.modules.platform</depends>
     <depends>Git4Idea</depends>
 
+    <extensions defaultExtensionNs="com.intelliJ">
+        <projectService
+            serviceImplementation="com.alethia.session.AlethiaStateService"/>
+    </extensions>
+
+    <projectListeners>
+        <listener
+            class="com.alethia.detection.listeners.AlethiaDocumentListener"
+            topic="com.intellij.openapi.editor.event.DocumentListener"/>
+    </projectListeners>
+
 </idea-plugin>
