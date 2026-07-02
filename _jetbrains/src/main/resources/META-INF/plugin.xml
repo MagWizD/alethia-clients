@@ -14,8 +14,7 @@
     <depends>Git4Idea</depends>
 
     <extensions defaultExtensionNs="com.intelliJ">
-        <projectService
-            serviceImplementation="com.alethia.session.AlethiaStateService"/>
+        <projectService serviceImplementation="com.alethia.session.AlethiaStateService"/>
     </extensions>
 
     <projectListeners>

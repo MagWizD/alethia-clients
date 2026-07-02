@@ -3,15 +3,21 @@ package com.alethia.detection.listeners
 import com.alethia.detection.AlethiaEventHandler
 import com.alethia.detection.events.DetectionEvent
 import com.alethia.detection.events.EventSource
+import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.fileEditor.FileDocumentManager
+import com.intellij.openapi.project.Project
 
 /**
  * Thin adapter - Listens to document changes and forwards them
  * to AlethiaEventHandler as DetectionEvent objects.
  */
-class AlethiaDocumentListener : DocumentListener {
+class AlethiaDocumentListener(private val project: Project) : DocumentListener {
+
+    // Get the handler via the project service
+    private val sessionState = project.service<AlethiaSessionState>()
+    private val handler = AlethiaEventHandler(sessionState)
 
     // Record last time a file document change occurred
     private var lastEditTime = System.currentTimeMillis()

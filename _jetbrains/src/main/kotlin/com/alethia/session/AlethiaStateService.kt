@@ -1,5 +1,6 @@
 package com.alethia.session
 
+import com.alethia.model.FlaggedRegion
 import com.alethia.model.SerializableFlaggedRegion
 import com.intellij.ide.util.PropertiesComponent
 import com.intellij.openapi.components.PersistentStateComponent
@@ -33,7 +34,7 @@ import com.intellij.openapi.project.Project
     storages = [Storage("alethia-state.xml")]   // Filename
 )
 class AlethiaStateService(private val project : Project) :
-    PersistentStateComponent<AlethiaStateService.State> {
+    PersistentStateComponent<AlethiaStateService.State>, SessionState {
 
     // -------------- Set Service constants/variables ------------------
 
@@ -76,10 +77,50 @@ class AlethiaStateService(private val project : Project) :
     }
 
     // -------------- Implement the FlaggedRegion API ------------------
-
     // Implement functions to update flags within the current state
 
-    // -------------- Implement the lastCommitSha API ------------------
+    /**
+     * Adds a FlaggedRegion to the session queue.
+     * Converts to SerializableFlaggedRegion for storage.
+     */
+    override fun addFlag(flag: FlaggedRegion) {
+        myState.flaggedRegions.add(SerializableFlaggedRegion.from(flag))
+    }
 
+    /**
+     * Retrieves all queued flags as FlaggedRegion objects.
+     * Converts from SerializableFlaggedRegion back to FlaggedRegion
+     */
+    override fun getFlags(): List<FlaggedRegion> {
+        return myState.flaggedRegions.map { it.toFlaggedRegion() }
+    }
+
+    /**
+     * Tally and return the number of queued flags in the current session.
+     */
+    override fun flagCount(): Int {
+        return myState.flaggedRegions.size
+    }
+
+    /**
+     * Clears all queued flags, called after they are written
+     * to a git note on commit.
+     */
+    override fun clearFlags() {
+       myState.flaggedRegions.clear()
+    }
+
+    // -------------- Implement the lastCommitSha API ------------------
     // Implement functions to load and restore last commit sha
+
+    /**
+     * SHA for the most recent processed commit.
+     * Stored via the PersistentComponent for immediate disk write.
+     * Prevents duplicate git notes if IDE crashes after a commit but
+     * before a clean shutdown.
+     * Returns null is no commit has been processed yet, hence the '?'
+     */
+    override var lastCommitSha: String?
+        get() = props.getValue(LAST_COMMIT_SHA_KEY)
+        set(value) { props.setValue(LAST_COMMIT_SHA_KEY, value) }
 }

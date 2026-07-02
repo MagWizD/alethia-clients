@@ -4,53 +4,62 @@ import com.alethia.detection.events.DetectionEvent
 import com.alethia.detection.events.EventSource
 import com.alethia.detection.rules.RuleEngine
 import com.alethia.model.FlaggedRegion
-import com.alethia.session.AlethiaSessionState
+import com.alethia.session.SessionState
 
 /**
- * Object that acts as the single entry point for all detection events.
- * Receives events from all listeners, deduplicates them by source heirarchy,
- * delegates rule evaluation to RuleEngine, and queues flags in the session state.
+ * Single entry point for all detection events.
+ * Receives SessionState via constructor injection, never
+ * accesses session state directly. Coupled only to the
+ * SessionState interface, not any concrete implementation.
  *
- * Deduplication logic:
- * If a CLIPBOARD_PASTE event arrives for a file, any following DOCUMENT_CHANGE
- * event will be dropped - the more specific source wins. A short window gives
- * all listeners time to fire before decisions are made.
+ * Deduplication:
+ * CLIPBOARD_PASTE events are recorded per file. Any subsequent
+ * DOCUMENT_CHANGE for the same file within PASTE_WINDOW_MS is
+ * suppressed, the more specific source wins.
  */
-object AlethiaEventHandler {
+class AletheiaEventHandler(private val sessionState: SessionState) {
 
-    // Tracks recent paste events by file
-    // Used to suppress duplicate events from same insertion
+    // Tracks recent paste events by file path
+    // Used to suppress duplicate DOCUMENT_CHANGE events
+    // for the same insertion
     private val recentPastes = mutableMapOf<String, Long>()
-    private const val PASTE_WINDOW_MS = 500L
+    private val PASTE_WINDOW_MS = 500L
 
-    // Submits the event to RuleEngine for evaluation and submits
-    // flag to Session State
+    /**
+     * Submits a detection event for evaluation.
+     * Deduplicates by source priority, evaluates against
+     * all registered rules, and queues a flag if warranted.
+     *
+     * @param event The detection event from any listener
+     */
     fun submit(event: DetectionEvent) {
 
-        // If this is a paste, then record is so following DOCUMENT_CHANGE
-        // events are ignored.
+        // Record paste events so any flolowing DOCUMENT_CHANGE
+        // events for the same insertion can be suppressed
         if (event.source == EventSource.CLIPBOARD_PASTE) {
             recentPastes[event.filePath] = System.currentTimeMillis()
         }
 
-        // If this is a document change , check if a paste just fire for this file.
+        // Suppress DOCUMENT_CHANGE if a paste just fired for this file
+        // within the deduplication window
         if (event.source == EventSource.DOCUMENT_CHANGE) {
             val lastPaste = recentPastes[event.filePath] ?: 0L
-            if (System.currentTimeMillis() - lastPaste > PASTE_WINDOW_MS) return
+            if (System.currentTimeMillis() - lastPaste < PASTE_WINDOW_MS) return
         }
 
-        // Submit event to RuleEngine to evaluate against all registed rules
+        // Evaluate against all registered rules
+        // null means no rule matched
         val rationale = RuleEngine.evaluate(event) ?: return
 
-        // Build and queue flag
-        AlethiaSessionState.addFlag(
+        // Build flag and queue via injected session state
+        sessionState.addFlag(
             FlaggedRegion(
                 file = event.filePath,
                 startLine = event.startLine,
                 endLine = event.endLine,
                 charCount = event.charCount,
                 rationale = rationale,
-                timeStamp = event.timestamp,
+                timeStamp = event.timestamp
             )
         )
     }
