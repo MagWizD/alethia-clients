@@ -3,6 +3,8 @@ package com.alethia.detection.listeners
 import com.alethia.detection.AlethiaEventHandler
 import com.alethia.detection.events.DetectionEvent
 import com.alethia.detection.events.EventSource
+import com.alethia.session.AlethiaStateService
+import com.alethia.utils.getRepoRoot
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener
@@ -16,7 +18,7 @@ import com.intellij.openapi.project.Project
 class AlethiaDocumentListener(private val project: Project) : DocumentListener {
 
     // Get the handler via the project service
-    private val sessionState = project.service<AlethiaSessionState>()
+    private val sessionState = project.service<AlethiaStateService>()
     private val handler = AlethiaEventHandler(sessionState)
 
     // Record last time a file document change occurred
@@ -37,9 +39,10 @@ class AlethiaDocumentListener(private val project: Project) : DocumentListener {
             .getFile(document)?.path ?: return
 
         // Submit the DetectionEvent to AlethiaEventHandler
-        AlethiaEventHandler.submit(
+        handler.submit(
             DetectionEvent(
                 filePath = filePath,
+                repoRoot = getRepoRoot(project, filePath) ?: return,
                 charCount = event.newFragment.length,
                 startLine = document.getLineNumber(event.offset) + 1,
                 endLine = document.getLineNumber(event.offset) +

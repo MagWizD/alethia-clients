@@ -4,7 +4,11 @@ import com.alethia.detection.events.DetectionEvent
 import com.alethia.detection.events.EventSource
 import com.alethia.detection.rules.RuleEngine
 import com.alethia.model.FlaggedRegion
+import com.alethia.services.LoggingFactory
+import com.alethia.services.LoggingService
 import com.alethia.session.SessionState
+import com.alethia.utils.scrubPath
+import com.intellij.openapi.components.service
 
 /**
  * Single entry point for all detection events.
@@ -17,7 +21,9 @@ import com.alethia.session.SessionState
  * DOCUMENT_CHANGE for the same file within PASTE_WINDOW_MS is
  * suppressed, the more specific source wins.
  */
-class AletheiaEventHandler(private val sessionState: SessionState) {
+class AlethiaEventHandler(private val sessionState: SessionState) {
+
+    private val LOG = service<LoggingFactory>().getLogger(AlethiaEventHandler::class.java.name)
 
     // Tracks recent paste events by file path
     // Used to suppress duplicate DOCUMENT_CHANGE events
@@ -54,7 +60,7 @@ class AletheiaEventHandler(private val sessionState: SessionState) {
         // Build flag and queue via injected session state
         sessionState.addFlag(
             FlaggedRegion(
-                file = event.filePath,
+                file = scrubPath(event.filePath, event.repoRoot),
                 startLine = event.startLine,
                 endLine = event.endLine,
                 charCount = event.charCount,

@@ -7,6 +7,7 @@ package com.alethia.detection.events
  */
 data class DetectionEvent(
     val filePath: String,       // Absolute path of the file where the event occurred
+    val repoRoot: String,       // Path to the repo root on the local machine
     val charCount: Int,         // Number of chars in teh insertion
     val startLine: Int,         // Line where the insertion begins (1-indexed)
     val endLine: Int,           // Lien where teh insertion ends (1-indexed)

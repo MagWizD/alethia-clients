@@ -15,6 +15,7 @@
 
     <extensions defaultExtensionNs="com.intelliJ">
         <projectService serviceImplementation="com.alethia.session.AlethiaStateService"/>
+        <applicationService serviceImplementation="com.alethia.services.LoggingFactory"/>
     </extensions>
 
     <projectListeners>

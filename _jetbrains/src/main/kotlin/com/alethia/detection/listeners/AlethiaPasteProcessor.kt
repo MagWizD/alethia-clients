@@ -1,46 +1,45 @@
-package com.aletheia.detection.listeners
+package com.alethia.detection.listeners
 
 import com.alethia.detection.AlethiaEventHandler
 import com.alethia.detection.events.DetectionEvent
 import com.alethia.detection.events.EventSource
+import com.alethia.session.AlethiaStateService
+import com.alethia.utils.getRepoRoot
 import com.intellij.codeInsight.editorActions.CopyPastePreProcessor
+import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.RawText
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiFile
 
 /**
- * Thin adapter — intercepts paste events and forwards them
- * to AletheiaEventHandler as DetectionEvent objects.
- * Makes no flagging decisions itself.
- * Always returns text unmodified — observing only, never blocking.
+ * Thin adapter that intercepts paste events and forwards them
+ * to AlethiaEventHandler as DetectionEvent objects.
+ * Always returns text unmodified.
  */
 class AlethiaPasteProcessor : CopyPastePreProcessor {
-
     /**
-     * Intercepts text before it is copying to clipboard.
-     * We are not monitoring copy events, but IntelliJ gets
-     * angry if we don't override this function as well - return null
+     * Intercepts text before it is copied to the clipboard.
+     * We do not monitor copy events — return null to leave
+     * the copied text unmodified.
      *
-     * @param file              The PSI file being copied from
-     * @param startOffsets      Array of start offsets of the copied ranges
-     * @param endOffsets        Array of end offsets of the copied ranges
-     * @param text              The text being copied
-     * @return null             Do not modify copied text
+     * @param file          The PSI file being copied from
+     * @param startOffsets  Array of start offsets of the copied ranges
+     * @param endOffsets    Array of end offsets of the copied ranges
+     * @param text          The text being copied
+     * @return null         Do not modify copied text
      */
     override fun preprocessOnCopy(
         file: PsiFile?,
         startOffsets: IntArray?,
         endOffsets: IntArray?,
         text: String?
-    ): String? {
-        return null
-    }
+    ): String? = null
 
     /**
-     * Intercepts text before pasting into the editor.
-     * Builds DetectionEvent, forwarding it to AletheiaEventHandler.
-     * Always returns text unmodified
+     * Intercepts text before it is pasted into the editor.
+     * Builds a DetectionEvent and forwards it to AlethiaEventHandler.
+     * Always returns text unmodified — observing only, never blocking.
      *
      * @param project   The currently open project
      * @param file      The PSI file being pasted into
@@ -56,17 +55,26 @@ class AlethiaPasteProcessor : CopyPastePreProcessor {
         text: String,
         rawText: RawText?
     ): String {
-        // If file.path is null, then exit early by returning clipboar text
+        // Get file path — bail out if unavailable, returning text unmodified
         val filePath = file.virtualFile?.path ?: return text
+
+        // Get repo root — bail out if file is not inside a git repo
+        val repoRoot = getRepoRoot(project, filePath) ?: return text
+
         val document = editor.document
         val caretOffset = editor.caretModel.offset
         val startLine = document.getLineNumber(caretOffset) + 1
         val lineCount = text.count { it == '\n' }
 
-        // Sbumit Detection to the AlethiaEventHandler for rules eval
-        AlethiaEventHandler.submit(
+        // Build handler from project service and submit detection event
+        // TODO: move to constructor injection once plugin.xml supports
+        // project-scoped paste processor registration
+        val handler = AlethiaEventHandler(project.service<AlethiaStateService>())
+
+        handler.submit(
             DetectionEvent(
                 filePath = filePath,
+                repoRoot = repoRoot,
                 charCount = text.length,
                 startLine = startLine,
                 endLine = startLine + lineCount,
