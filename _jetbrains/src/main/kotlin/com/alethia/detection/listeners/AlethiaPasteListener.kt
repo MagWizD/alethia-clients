@@ -17,7 +17,7 @@ import com.intellij.psi.PsiFile
  * to AlethiaEventHandler as DetectionEvent objects.
  * Always returns text unmodified.
  */
-class AlethiaPasteProcessor : CopyPastePreProcessor {
+class AlethiaPasteListener : CopyPastePreProcessor {
     /**
      * Intercepts text before it is copied to the clipboard.
      * We do not monitor copy events — return null to leave
