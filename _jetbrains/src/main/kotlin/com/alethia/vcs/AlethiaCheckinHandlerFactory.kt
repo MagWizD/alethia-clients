@@ -51,16 +51,17 @@ class AlethiaCheckinHandler(private val panel: CheckinProjectPanel) :
             return
         }
 
+        // For each repo get the current head SHA and check if any changes have occurred since last commit.
         repos.forEach { repo ->
             val repoPath = repo.root.path
 
-            // Get current HEAD SHA hash, this is the commit we just made
+            // Get the current HEAD SHA hash, this is the commit we just made
             val sha = repo.currentRevision ?: run {
                 LOG.warn("AlethiaCheckinHandler: could not get HEAD SHA for $repoPath")
                 return@forEach
             }
 
-            // Skip if nothing to write
+            // Skip writing step if nothing to write
             if (sessionState.flagCount() == 0) {
                 LOG.info("AlethiaCheckinHandler: no flags queued for commit ${sha.take(7)} -> skipping")
                 return@forEach
@@ -77,9 +78,9 @@ class AlethiaCheckinHandler(private val panel: CheckinProjectPanel) :
      * Uses a temp file to avoid cross-platform shell escaping issues.
      * Clears session state after successful write.
      *
-     * @param repoPath  Absolute path to the repo root
-     * @param sha       The commit SHA to attach the note to
-     * @param sessionState The current session state containing queued flags
+     * @param repoPath      Absolute path to the repo root
+     * @param sha           The commit SHA to attach the note to
+     * @param sessionState  The current session state containing queued flags
      */
     private fun writeGitNote(repoPath: String, sha: String, sessionState: AlethiaStateService) {
         try {
@@ -88,7 +89,7 @@ class AlethiaCheckinHandler(private val panel: CheckinProjectPanel) :
             // Build the JSON block that will be saved in the note
             val noteContent = buildNoteJson(flags)
 
-            // Create a temp file, avoids Windows shell quote handling issues (Occurred in Hackathon)
+            // Create a temp file, avoids Windows Shell quote handling issues (Occurred in Hackathon)
             val tempFile = File(repoPath, ".git/alethia_temp_note.json")
             tempFile.writeText(noteContent)
 
@@ -104,8 +105,10 @@ class AlethiaCheckinHandler(private val panel: CheckinProjectPanel) :
                 .start()
                 .waitFor()
 
+            // Remove temp file, no longer needed!
             tempFile.delete()
 
+            // Log outcome and work done
             if (exitCode == 0) {
                 LOG.info("AlethiaCheckinHandler: note written for commit ${sha.take(7)}, ${flags.size} flag(s)")
                 sessionState.clearFlags()
