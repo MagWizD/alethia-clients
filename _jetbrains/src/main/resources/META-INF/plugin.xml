@@ -40,4 +40,9 @@
             topic="com.intellij.openapi.editor.event.DocumentListener"/>
     </projectListeners>
 
+
+    <!--  OTHER COMPONENTS  -->
+    <!--  Hooks into IntelliJ commit pipeline, fires after every successful commit  -->
+    <vcsCheckinHandlerFactory implementation="com.alethia.vcs.AlethiaCheckinHandlerFactory"/>
+
 </idea-plugin>
