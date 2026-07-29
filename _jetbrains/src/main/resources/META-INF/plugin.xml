@@ -39,6 +39,12 @@
             class="com.alethia.detection.listeners.AlethiaDocumentListener"
             topic="com.intellij.openapi.editor.event.DocumentListener"/>
     </projectListeners>
+    <applicationListeners>
+        <!--  Fires after a git push is detected within the project  -->
+        <listener
+            class="com.alethia.detection.listeners.AlethiaGitPushListener"
+            topic="git4idea.push.GitPushListener"/>
+    </applicationListeners>
 
 
     <!--  OTHER COMPONENTS  -->
