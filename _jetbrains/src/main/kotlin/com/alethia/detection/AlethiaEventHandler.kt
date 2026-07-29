@@ -6,58 +6,82 @@ import com.alethia.detection.rules.RuleEngine
 import com.alethia.model.FlaggedRegion
 import com.alethia.services.LoggingFactory
 import com.alethia.services.LoggingService
+import com.alethia.session.AlethiaStateService
 import com.alethia.session.SessionState
 import com.alethia.utils.scrubPath
+import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
+import com.intellij.openapi.project.Project
 
 /**
  * Single entry point for all detection events.
- * Receives SessionState via constructor injection, never
- * accesses session state directly. Coupled only to the
- * SessionState interface, not any concrete implementation.
+ * Registered as project-scoped service so listeners can get
+ * it thorugh project.service<AlethiaEventHandler>() without wiring
+ * dependencies themselves (otherwise every listener added would need
+ * to instantiate log service, sessionState, and the hnadler, real
+ * annoying and messy -> tight coupling).
  *
+ * Two constructors, here's why:
+ * - Primary: accepts SessionState and LoggingService directly.
+ *   Used in tests to inject mocks without needing the IntelliJ Platform.
+ * - Secondary: accepts Project and resolves dependencies via IntelliJ
+ *   service locator. Used by IntelliJ when managing this as a service.
  * Deduplication:
- * CLIPBOARD_PASTE events are recorded per file. Any subsequent
- * DOCUMENT_CHANGE for the same file within PASTE_WINDOW_MS is
- * suppressed, the more specific source wins.
+ * - CLIPBOARD_PASTE events are recorded per file. Any subsequent
+ *   DOCUMENT_CHANGE for the same file within PASTE_WINDOW_MS is
+ *   suppressed, the more specific source will win.
  */
-class AlethiaEventHandler(private val sessionState: SessionState) {
+@Service(Service.Level.PROJECT)
+class AlethiaEventHandler(
+    private val sessionState: SessionState,
+    private val logging: LoggingService
+) {
 
-    private val LOG = service<LoggingFactory>().getLogger(AlethiaEventHandler::class.java.name)
+    /**
+     * Secondary constructor: Used by IntelliJ when instantiating
+     * this class as service. Resolves SessionState
+     * and LoggingService from the IntelliJ service maps.
+     *
+     * @param project The currently open project, gets injected by IntelliJ
+     */
+    constructor(project: Project) : this(
+        sessionState = project.service<AlethiaStateService>(),
+        logging = service<LoggingFactory>()
+    )
 
-    // Tracks recent paste events by file path
-    // Used to suppress duplicate DOCUMENT_CHANGE events
+    // Fecth the logger from LogService
+    private val LOG = logging.getLogger(AlethiaEventHandler::class.java.name)
+
+    // Track recent paste events by file path
+    // Used to suppress duplicate events
     // for the same insertion
     private val recentPastes = mutableMapOf<String, Long>()
     private val PASTE_WINDOW_MS = 500L
 
     /**
-     * Submits a detection event for evaluation.
+     * Submti a detection event for rule evaluating.
      * Deduplicates by source priority, evaluates against
-     * all registered rules, and queues a flag if warranted.
+     * all registered rules, and queues a flag if one needs to be created.
      *
-     * @param event The detection event from any listener
+     * @param event The detection event from any of our listeners
      */
     fun submit(event: DetectionEvent) {
 
-        // Record paste events so any flolowing DOCUMENT_CHANGE
-        // events for the same insertion can be suppressed
+        // Record paste events so any following DOCUMENT_CHANGE
+        // events for matching file get suppressed
         if (event.source == EventSource.CLIPBOARD_PASTE) {
             recentPastes[event.filePath] = System.currentTimeMillis()
         }
-
         // Suppress DOCUMENT_CHANGE if a paste just fired for this file
-        // within the deduplication window
         if (event.source == EventSource.DOCUMENT_CHANGE) {
             val lastPaste = recentPastes[event.filePath] ?: 0L
             if (System.currentTimeMillis() - lastPaste < PASTE_WINDOW_MS) return
         }
-
-        // Evaluate against all registered rules
-        // null means no rule matched
+        // Evaluate against all registered rules in the engine
         val rationale = RuleEngine.evaluate(event) ?: return
 
         // Build flag and queue via injected session state
+        // Path is scrubbed to repo-relative be being persisted
         sessionState.addFlag(
             FlaggedRegion(
                 file = scrubPath(event.filePath, event.repoRoot),
@@ -68,5 +92,8 @@ class AlethiaEventHandler(private val sessionState: SessionState) {
                 timeStamp = event.timestamp
             )
         )
+
+        // Log flag creation
+        LOG.info("AlethiaEventHandler: flag created: ${event.filePath} L${event.startLine}-${event.endLine}")
     }
 }

@@ -3,6 +3,7 @@ package com.alethia.detection.listeners
 import com.alethia.detection.AlethiaEventHandler
 import com.alethia.detection.events.DetectionEvent
 import com.alethia.detection.events.EventSource
+import com.alethia.services.LoggingFactory
 import com.alethia.session.AlethiaStateService
 import com.alethia.utils.getRepoRoot
 import com.intellij.codeInsight.editorActions.CopyPastePreProcessor
@@ -66,10 +67,8 @@ class AlethiaPasteListener : CopyPastePreProcessor {
         val startLine = document.getLineNumber(caretOffset) + 1
         val lineCount = text.count { it == '\n' }
 
-        // Build handler from project service and submit detection event
-        // TODO: move to constructor injection once plugin.xml supports
-        // project-scoped paste processor registration
-        val handler = AlethiaEventHandler(project.service<AlethiaStateService>())
+        // Retrieve AlethiaEventHandler service
+        val handler = project.service<AlethiaEventHandler>()
 
         handler.submit(
             DetectionEvent(

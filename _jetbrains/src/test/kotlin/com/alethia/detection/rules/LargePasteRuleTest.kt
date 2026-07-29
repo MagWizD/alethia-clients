@@ -109,9 +109,11 @@ class LargePasteRuleTest {
     private fun buildEvent(
         charCount: Int,
         source: EventSource,
-        filePath: String = "/project/src/Main.kt"
+        filePath: String = "/project/src/Main.kt",
+        repoRoot: String = "/project"
     ) = DetectionEvent(
         filePath = filePath,
+        repoRoot = repoRoot,
         charCount = charCount,
         startLine = 1,
         endLine = 1,

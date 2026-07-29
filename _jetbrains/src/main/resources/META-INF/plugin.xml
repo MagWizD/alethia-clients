@@ -20,9 +20,12 @@
     <!--  Bundled git plugin, required for repo detection, push/rebase listeners...  -->
     <depends>Git4Idea</depends>
 
+
     <!--  SERVICES  -->
     <!--  Managed singletons, never instantiated, use project.service<>() to retrieve  -->
     <extensions defaultExtensionNs="com.intelliJ">
+        <!--  Project-Scoped | Handles all Events from received Alethia listeners  -->
+        <projectService serviceImplementation="com.alethia.detection.AlethiaEventHandler"/>
         <!--  Project-Scoped | Handles flaggedRegions persistence and lastCommitSha  -->
         <projectService serviceImplementation="com.alethia.session.AlethiaStateService"/>
         <!--  Application-Scoped | Wraps IntelliJ Logger, can be injected/mocked  -->
