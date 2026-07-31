@@ -56,6 +56,9 @@ class AlethiaPasteListener : CopyPastePreProcessor {
         text: String,
         rawText: RawText?
     ): String {
+
+        println("=== ALETHIA PASTE LISTENER FIRED ===")
+
         // Get file path — bail out if unavailable, returning text unmodified
         val filePath = file.virtualFile?.path ?: return text
 

@@ -23,7 +23,7 @@
 
     <!--  SERVICES  -->
     <!--  Managed singletons, never instantiated, use project.service<>() to retrieve  -->
-    <extensions defaultExtensionNs="com.intelliJ">
+    <extensions defaultExtensionNs="com.intellj">
         <!--  Project-Scoped | Handles all Events from received Alethia listeners  -->
         <projectService serviceImplementation="com.alethia.detection.AlethiaEventHandler"/>
         <!--  Project-Scoped | Handles flaggedRegions persistence and lastCommitSha  -->
@@ -32,6 +32,10 @@
         <applicationService serviceImplementation="com.alethia.services.LoggingFactory"/>
         <!--  Run on project load | Installs pre-push hook/git-config via AlethiaInstaller  -->
         <postStartupActivity implementation="com.alethia.startup.AlethiaStartupActivity"/>
+        <!--  Intercepts paste events before text lands in editor  -->
+        <copyPastePreProcessor implementation="com.alethia.detection.listeners.AlethiaPasteListener"/>
+        <!--  Hooks into IntelliJ commit pipeline, fires after every successful commit  -->
+        <vcsCheckinHandlerFactory implementation="com.alethia.vcs.AlethiaCheckinHandlerFactory"/>
     </extensions>
 
     <!--  LISTENERS  -->
@@ -48,10 +52,4 @@
             class="com.alethia.detection.listeners.AlethiaGitPushListener"
             topic="git4idea.push.GitPushListener"/>
     </applicationListeners>
-
-
-    <!--  OTHER COMPONENTS  -->
-    <!--  Hooks into IntelliJ commit pipeline, fires after every successful commit  -->
-    <vcsCheckinHandlerFactory implementation="com.alethia.vcs.AlethiaCheckinHandlerFactory"/>
-
 </idea-plugin>

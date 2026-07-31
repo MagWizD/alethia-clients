@@ -4,9 +4,11 @@ import com.alethia.detection.AlethiaEventHandler
 import com.alethia.detection.events.DetectionEvent
 import com.alethia.detection.events.EventSource
 import com.alethia.services.LoggingFactory
+import com.alethia.services.LoggingService
 import com.alethia.session.AlethiaStateService
 import com.alethia.utils.getRepoRoot
 import com.intellij.openapi.components.service
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.fileEditor.FileDocumentManager
@@ -21,6 +23,7 @@ class AlethiaDocumentListener(private val project: Project) : DocumentListener {
 
     // Get the handler via the project service
     private val handler = project.service<AlethiaEventHandler>()
+    private val LOG = Logger.getInstance(AlethiaGitPushListener::class.java)
 
     // Record last time a file document change occurred
     private var lastEditTime = System.currentTimeMillis()
@@ -33,6 +36,8 @@ class AlethiaDocumentListener(private val project: Project) : DocumentListener {
      * @param event     The document event containing the change details
      */
     override fun documentChanged(event: DocumentEvent) {
+        println("=== ALETHIA DOCUMENT LISTENER FIRED ===")
+        LOG.info("=== ALETHIA DOCUMENT LISTENER FIRED ===")
         val now = System.currentTimeMillis()
         val document = event.document
 
