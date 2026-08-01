@@ -3,9 +3,6 @@ package com.alethia.detection.listeners
 import com.alethia.detection.AlethiaEventHandler
 import com.alethia.detection.events.DetectionEvent
 import com.alethia.detection.events.EventSource
-import com.alethia.services.LoggingFactory
-import com.alethia.services.LoggingService
-import com.alethia.session.AlethiaStateService
 import com.alethia.utils.getRepoRoot
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
@@ -13,7 +10,6 @@ import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
-import fleet.rpc.server.FleetService.Companion.service
 
 /**
  * Thin adapter - Listens to document changes and forwards them

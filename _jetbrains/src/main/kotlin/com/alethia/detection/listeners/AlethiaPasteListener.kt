@@ -3,8 +3,6 @@ package com.alethia.detection.listeners
 import com.alethia.detection.AlethiaEventHandler
 import com.alethia.detection.events.DetectionEvent
 import com.alethia.detection.events.EventSource
-import com.alethia.services.LoggingFactory
-import com.alethia.session.AlethiaStateService
 import com.alethia.utils.getRepoRoot
 import com.intellij.codeInsight.editorActions.CopyPastePreProcessor
 import com.intellij.openapi.components.service
