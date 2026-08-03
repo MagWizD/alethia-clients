@@ -67,26 +67,30 @@ Both clients collect the same categories of metadata and write them as a structu
 
 ```json
 {
-  "AlethiaVersion": "0.1.0",
-  "commit": "<sha>",
-  "generatedAt": "<iso timestamp>",
-  "extensionActive": true,
-  "flagCount": 2,
-  "flaggedRegions": [
-    {
-      "file": "src/auth.js",
-      "startLine": 42,
-      "endLine": 67,
-      "charCount": 1204,
-      "reasonFlagged": "Large instant insertion - 1204 chars in 80ms",
-      "timeStamp": "<iso timestamp>"
+    "alethia": {
+        "version": "0.1.0",
+        "generatedAt": "2026-08-03T00:00:00Z",
+        "flagCount": 2,              <- //INT
+        "flaggedRegions": [          <- //ARRAY
+            {
+                "file": "src/auth.kt",
+                "startLine": 10,     <- //INT
+                "endLine": 20,       <- //INT
+                "charCount": 500,    <- //LONG 
+                "rationale": "Large clipboard paste - 500 chars.",
+                "timeStamp": "2026-08-03T00:00:00Z"
+            },
+            {...}
+        ]
     }
-  ],
-  "chatHistory": []
 }
 ```
 
-A commit with `extensionActive: true` and `flagCount: 0` means the extension was running and found nothing suspicious. A commit with no note at all means the extension was not active - Themis treats this as a signal in itself.
+This simple structure has multiple benefits:
+- A commit with no `alethia` object means that `Alethia` was not active -> `Themis` can flag this
+- A commit with an `alethia` object but no flags means `Alethia` was active but found nothing suspicious
+- A commit with a non-zero `flagCount` and populated `flaggedRegions` means `Alethia` created flags
+  - Additional note: `Themis` should flag if `array size` and `flagCount` do not match -> could indicate a transfer error or tampering
 
 ---
  
