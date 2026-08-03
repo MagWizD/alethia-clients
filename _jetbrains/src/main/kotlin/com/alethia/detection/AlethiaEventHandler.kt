@@ -9,7 +9,6 @@ import com.alethia.services.LoggingService
 import com.alethia.session.AlethiaStateService
 import com.alethia.session.SessionState
 import com.alethia.utils.scrubPath
-import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 
@@ -31,7 +30,6 @@ import com.intellij.openapi.project.Project
  *   DOCUMENT_CHANGE for the same file within PASTE_WINDOW_MS is
  *   suppressed, the more specific source will win.
  */
-@Service(Service.Level.PROJECT)
 class AlethiaEventHandler(
     private val sessionState: SessionState,
     private val logging: LoggingService

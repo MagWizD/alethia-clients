@@ -1,6 +1,5 @@
 package com.alethia.services
 
-import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
 import java.io.File
 import java.util.logging.FileHandler
@@ -8,7 +7,6 @@ import java.util.logging.Level
 import java.util.logging.LogManager
 import java.util.logging.SimpleFormatter
 
-@Service
 class LoggingFactory : LoggingService {
 
     init {

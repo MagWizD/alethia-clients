@@ -4,7 +4,6 @@ import com.alethia.model.FlaggedRegion
 import com.alethia.model.SerializableFlaggedRegion
 import com.intellij.ide.util.PropertiesComponent
 import com.intellij.openapi.components.PersistentStateComponent
-import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.project.Project
@@ -28,7 +27,6 @@ import com.intellij.openapi.project.Project
  * IntelliJ Platform. We can access it via service<AlethiaStateService>,
  * we never need to instantiate it, it is a singleton service.
  */
-@Service(Service.Level.PROJECT)
 @State(
     name ="AlethiaStateService",                        // Name inside the XML
     storages = [Storage("alethia-state.xml")]   // Filename
