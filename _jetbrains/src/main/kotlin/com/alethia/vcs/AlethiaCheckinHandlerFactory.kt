@@ -151,10 +151,12 @@ class AlethiaCheckinHandler(private val panel: CheckinProjectPanel) : CheckinHan
         // Wrap flags in the root note object with metadata
         return """
         {
-            "alethiaVersion": "0.1.0",
-            "generatedAt": "${java.time.Instant.now()}",
-            "flagCount": ${flags.size},
-            "flaggedRegions": [$flagsJson]
+            "alethia": {
+                "version": "0.1.0",
+                "generatedAt": "${'$'}{java.time.Instant.now()}",
+                "flagCount": ${'$'}{flags.size},
+                "flaggedRegions": [${'$'}flagsJson]
+            }
         }
     """.trimIndent()
     }
