@@ -26,6 +26,8 @@ object AlethiaInstaller {
      * @param project The currently open project
      */
     fun install(project: Project) {
+
+        LOG.info("AlethiaInstaller: install called for project=${project.name}")  // ← add this line
         val repos = GitRepositoryManager.getInstance(project).repositories
 
         // Check that a repo exists
@@ -40,7 +42,7 @@ object AlethiaInstaller {
             // Set up the pre-push hook
             installGitHook(repoPath)
             // Set up the rebase git note persistence
-             installGitConfig(repoPath)
+            installGitConfig(repoPath)
         }
     }
 
@@ -73,7 +75,7 @@ object AlethiaInstaller {
             
             # Fetch remote notes into temp ref
             git fetch origin refs/notes/alethia:refs/notes/aletheia-remote 2>/dev/null || \
-                echo "[Alethia] Warning: could not fetch remote notes — skipping merge"
+                echo "[Alethia] Warning: could not fetch remote notes -> skipping merge"
             
             # Merge remote notes with local
             git notes --ref=refs/notes/alethia merge refs/notes/aletheia-remote 2>/dev/null || \
@@ -96,7 +98,7 @@ object AlethiaInstaller {
             hookFile.appendText("\n$alethiaBlock")
             LOG.info("AlethiaInstaller: appended Alethia Block to the existing pre-push hook")
         } else {
-            // Create the Hooks directory if it doesnt already exist
+            // Create the Hooks directory if it doesn't already exist
             hooksDir.mkdirs()
             // Create a new file with the Alethia block
             hookFile.writeText("#!/bin/sh\n$alethiaBlock\nexit 0\n")
@@ -131,6 +133,7 @@ object AlethiaInstaller {
             "notes.rewrite.amend" to "true"
         )
 
+        // For each config above, create a process outside of the JVM to udpate the git config
         configs.forEach { (key, value) ->
             try {
                 val result = ProcessBuilder("git", "config", key, value)
