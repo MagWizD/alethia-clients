@@ -6,7 +6,8 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.vcs.CheckinProjectPanel
 import com.intellij.openapi.vcs.changes.CommitContext
 import com.intellij.openapi.vcs.checkin.CheckinHandler
-import com.intellij.openapi.vcs.checkin.CheckinHandlerFactory
+import com.intellij.openapi.vcs.checkin.VcsCheckinHandlerFactory
+import git4idea.GitVcs
 import com.intellij.openapi.diagnostic.Logger
 import git4idea.repo.GitRepositoryManager
 import java.io.File
@@ -16,10 +17,11 @@ import java.io.File
  * Called by IntelliJ every time a commit is made in any VCS.
  * Creates an AlethiaCheckinHandler per commit operation.
  */
-class AlethiaCheckinHandlerFactory : CheckinHandlerFactory() {
-    override fun createHandler(panel: CheckinProjectPanel,
-                               commitContext: CommitContext):
-            CheckinHandler {
+class AlethiaCheckinHandlerFactory : VcsCheckinHandlerFactory(GitVcs.getKey()) {
+    override fun createVcsHandler(
+        panel: CheckinProjectPanel,
+        commitContext: CommitContext
+    ): CheckinHandler {
         return AlethiaCheckinHandler(panel)
     }
 }
@@ -30,8 +32,7 @@ class AlethiaCheckinHandlerFactory : CheckinHandlerFactory() {
  * On successful commit, all queued flags
  * are serialized to git notes.
  */
-class AlethiaCheckinHandler(private val panel: CheckinProjectPanel) :
-    CheckinHandler() {
+class AlethiaCheckinHandler(private val panel: CheckinProjectPanel) : CheckinHandler() {
 
     private val LOG = Logger.getInstance(AlethiaCheckinHandler::class.java)
 
@@ -41,6 +42,7 @@ class AlethiaCheckinHandler(private val panel: CheckinProjectPanel) :
      * on the new HEAD commit, then clears the queue.
      */
     override fun checkinSuccessful() {
+        LOG.info("AlethiaCheckinHandler: checkinSuccessful fired")
         val project = panel.project
         val sessionState = project.service<AlethiaStateService>()
 
@@ -112,6 +114,7 @@ class AlethiaCheckinHandler(private val panel: CheckinProjectPanel) :
             if (exitCode == 0) {
                 LOG.info("AlethiaCheckinHandler: note written for commit ${sha.take(7)}, ${flags.size} flag(s)")
                 sessionState.clearFlags()
+                sessionState.lastCommitSha = sha
             } else {
                 LOG.warn("AlethiaCheckinHandler: git notes add failed with exit code $exitCode")
             }
