@@ -1,6 +1,6 @@
 package com.alethia.detection.listeners
 
-import com.intellij.openapi.diagnostic.Logger
+import java.util.logging.Logger
 import git4idea.push.GitPushListener
 import git4idea.push.GitPushRepoResult
 import git4idea.repo.GitRepository
@@ -15,7 +15,7 @@ import java.io.File
  */
 class AlethiaGitPushListener : GitPushListener {
 
-    private val LOG = Logger.getInstance(AlethiaGitPushListener::class.java)
+    private val LOG = Logger.getLogger(AlethiaGitPushListener::class.java.name)
 
     /**
      * Fires after every successful git push.
@@ -61,7 +61,7 @@ class AlethiaGitPushListener : GitPushListener {
             .waitFor()
 
         if (fetchExit != 0) {
-            LOG.warn("AlethiaGitPushListener: failed to fetch remote notes, going forward with push anyway")
+            LOG.warning("AlethiaGitPushListener: failed to fetch remote notes, going forward with push anyway")
         }
 
         // Step 2: Merge the remote notes with the local notes
@@ -78,7 +78,7 @@ class AlethiaGitPushListener : GitPushListener {
             .waitFor()
 
         if (mergeExit != 0) {
-            LOG.warn("AlethiaGitPushListener: failed to merge remote notes -> going forward with push anyway")
+            LOG.warning("AlethiaGitPushListener: failed to merge remote notes -> going forward with push anyway")
         }
 
         // Step 3: Push the merged notes to remote
@@ -96,7 +96,7 @@ class AlethiaGitPushListener : GitPushListener {
             LOG.info("AlethiaGitPushListener: notes pushed successfully")
         } else {
             // Failure!
-            LOG.warn("AlethiaGitPushListener: failed to push notes: exit code $pushExit")
+            LOG.warning("AlethiaGitPushListener: failed to push notes: exit code $pushExit")
         }
     }
 }

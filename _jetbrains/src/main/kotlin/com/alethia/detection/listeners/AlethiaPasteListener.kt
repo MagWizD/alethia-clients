@@ -10,6 +10,7 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.RawText
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiFile
+import java.util.logging.Logger
 
 /**
  * Thin adapter that intercepts paste events and forwards them
@@ -17,6 +18,10 @@ import com.intellij.psi.PsiFile
  * Always returns text unmodified.
  */
 class AlethiaPasteListener : CopyPastePreProcessor {
+
+    private val LOG = Logger.getLogger(AlethiaPasteListener::class.java.name)
+
+
     /**
      * Intercepts text before it is copied to the clipboard.
      * We do not monitor copy events — return null to leave
@@ -55,7 +60,7 @@ class AlethiaPasteListener : CopyPastePreProcessor {
         rawText: RawText?
     ): String {
 
-        println("=== ALETHIA PASTE LISTENER FIRED ===")
+        LOG.info("alethia paste listener fired.")
 
         // Get file path — bail out if unavailable, returning text unmodified
         val filePath = file.virtualFile?.path ?: return text

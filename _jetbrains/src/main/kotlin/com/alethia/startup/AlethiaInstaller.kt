@@ -1,6 +1,6 @@
 package com.alethia.startup
 
-import com.intellij.openapi.diagnostic.Logger
+import java.util.logging.Logger
 import com.intellij.openapi.project.Project
 import git4idea.repo.GitRepositoryManager
 import java.io.File
@@ -18,7 +18,7 @@ import java.io.File
  */
 object AlethiaInstaller {
 
-    private val LOG = Logger.getInstance(AlethiaStartupActivity::class.java)
+    private val LOG = Logger.getLogger(AlethiaInstaller::class.java.name)
 
     /**
      * Entry point function - runs setup for all necessary installations.
@@ -146,13 +146,13 @@ object AlethiaInstaller {
                 } else {
                     // Non-zero means git failed
                     // Log the warning and continue
-                    LOG.warn("AlethiaInstaller: failed to set $key - git config returned $result")
+                    LOG.warning("AlethiaInstaller: failed to set $key - git config returned $result")
                 }
             } catch (e: Exception) {
                 // Error here means that the process couldnt start.
                 // git may not be installed or accessible on PATH
                 // Log and continue, dont let this crash the startup activity
-                LOG.warn("AlethiaInstaller: error setting $key -  ${e.message}")
+                LOG.warning("AlethiaInstaller: error setting $key -  ${e.message}")
             }
         }
     }

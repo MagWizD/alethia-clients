@@ -49,7 +49,7 @@ class LoggingFactory : LoggingService {
      * @param name  The logger name
      * @return      IntelliJ Platform Logger instance
      */
-    override fun getLogger(name: String): Logger {
-        return Logger.getInstance(name)
+    override fun getLogger(name: String): java.util.logging.Logger {
+        return java.util.logging.Logger.getLogger(name)
     }
 }
