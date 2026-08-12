@@ -7,6 +7,7 @@ import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.project.Project
+import java.util.logging.Logger
 
 /**
  * Persistent storage service for Alethia session data.
@@ -33,6 +34,8 @@ import com.intellij.openapi.project.Project
 )
 class AlethiaStateService(private val project : Project) :
     PersistentStateComponent<AlethiaStateService.State>, SessionState {
+
+    private val LOG = Logger.getLogger(AlethiaStateService::class.java.name)
 
     // -------------- Set Service constants/variables ------------------
 
@@ -119,6 +122,11 @@ class AlethiaStateService(private val project : Project) :
      * Returns null is no commit has been processed yet, hence the '?'
      */
     override var lastCommitSha: String?
-        get() = props.getValue(LAST_COMMIT_SHA_KEY)
-        set(value) { props.setValue(LAST_COMMIT_SHA_KEY, value) }
+        get() = props.getValue(LAST_COMMIT_SHA_KEY).also {
+            LOG.info("AlethiaStateService: lastCommitSha read = ${it?.take(7) ?: "null"}...")
+        }
+        set(value) {
+            props.setValue(LAST_COMMIT_SHA_KEY, value)
+            LOG.info("AlethiaStateService: lastCommitSha set to ${value?.take(7)}...")
+        }
 }

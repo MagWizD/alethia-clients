@@ -5,7 +5,7 @@ import com.alethia.detection.events.EventSource
 import com.alethia.model.FlaggedRegion
 import com.alethia.services.LoggingService
 import com.alethia.session.SessionState
-import com.intellij.openapi.diagnostic.Logger
+import java.util.logging.Logger
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
@@ -19,8 +19,7 @@ class EventHandlerTest {
 
     // Create a mocked Logger
     private val mockLogger = object : LoggingService {
-        override fun getLogger(name: String) =
-            Logger.getInstance(name)
+        override fun getLogger(name: String) = Logger.getLogger(name)
     }
 
     // Create a mock of a SessionState object for testing
