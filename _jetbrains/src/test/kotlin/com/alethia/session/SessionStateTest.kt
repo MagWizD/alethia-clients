@@ -128,6 +128,7 @@ class SessionStateTest {
     // ---------------------------  HELPER METHODS  ----------------------------
 
     private fun buildFlag(filePath: String) = FlaggedRegion(
+        eventType = "EVENT_TYPE",
         file = filePath,
         startLine = 1,
         endLine = 10,

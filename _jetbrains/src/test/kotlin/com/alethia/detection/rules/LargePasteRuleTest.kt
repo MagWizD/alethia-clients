@@ -43,7 +43,7 @@ class LargePasteRuleTest {
         val event = buildEvent(charCount = 500, source = EventSource.CLIPBOARD_PASTE)
         val result = rule.evaluate(event)
         assertNotNull(result)
-        assertTrue(result!!.contains("clipboard paste"))
+        assertTrue(result?.eventType.equals("LARGE_PASTE"))
     }
 
     @Test
@@ -51,7 +51,7 @@ class LargePasteRuleTest {
         val event = buildEvent(charCount = 500, source = EventSource.DOCUMENT_CHANGE)
         val result = rule.evaluate(event)
         assertNotNull(result)
-        assertTrue(result!!.contains("source unknown"))
+        assertTrue(result?.eventType.equals("LARGE_INSERTION"))
     }
 
     // Exactly at threshold
