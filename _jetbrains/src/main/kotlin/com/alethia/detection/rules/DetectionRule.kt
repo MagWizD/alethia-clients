@@ -1,6 +1,7 @@
 package com.alethia.detection.rules
 
 import com.alethia.detection.events.DetectionEvent
+import com.alethia.model.RuleResult
 
 /**
  * An interface that all teh detection rules implement.
@@ -10,5 +11,5 @@ import com.alethia.detection.events.DetectionEvent
  * it in the RuleEngine.
  */
 interface DetectionRule {
-    fun evaluate(event: DetectionEvent): String?
+    fun evaluate(event: DetectionEvent): RuleResult?
 }

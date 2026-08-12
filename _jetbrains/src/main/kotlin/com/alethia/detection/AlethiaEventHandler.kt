@@ -36,7 +36,7 @@ class AlethiaEventHandler(
 ) {
 
     /**
-     * Secondary constructor: Used by IntelliJ when instantiating
+     * Secondary constructor: This is used by IntelliJ when instantiating
      * this class as service. Resolves SessionState
      * and LoggingService from the IntelliJ service maps.
      *
@@ -51,13 +51,12 @@ class AlethiaEventHandler(
     private val LOG = logging.getLogger(AlethiaEventHandler::class.java.name)
 
     // Track recent paste events by file path
-    // Used to suppress duplicate events
-    // for the same insertion
+    // Used to suppress duplicate events for the same insertion
     private val recentPastes = mutableMapOf<String, Long>()
     private val PASTE_WINDOW_MS = 500L
 
     /**
-     * Submti a detection event for rule evaluating.
+     * Submit a detection event for rule evaluating.
      * Deduplicates by source priority, evaluates against
      * all registered rules, and queues a flag if one needs to be created.
      *
@@ -75,18 +74,20 @@ class AlethiaEventHandler(
             val lastPaste = recentPastes[event.filePath] ?: 0L
             if (System.currentTimeMillis() - lastPaste < PASTE_WINDOW_MS) return
         }
+
         // Evaluate against all registered rules in the engine
-        val rationale = RuleEngine.evaluate(event) ?: return
+        val result = RuleEngine.evaluate(event) ?: return
 
         // Build flag and queue via injected session state
         // Path is scrubbed to repo-relative be being persisted
         sessionState.addFlag(
             FlaggedRegion(
+                eventType = result.eventType,
                 file = scrubPath(event.filePath, event.repoRoot),
                 startLine = event.startLine,
                 endLine = event.endLine,
                 charCount = event.charCount,
-                rationale = rationale,
+                rationale = result.rationale,
                 timeStamp = event.timestamp
             )
         )

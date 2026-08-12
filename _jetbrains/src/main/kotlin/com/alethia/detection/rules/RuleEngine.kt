@@ -2,6 +2,7 @@ package com.alethia.detection.rules
 
 import com.alethia.config.DetectionConfig
 import com.alethia.detection.events.DetectionEvent
+import com.alethia.model.RuleResult
 
 /**
  * An object that evaluates a DetectionEvent against all the registered rules.
@@ -20,7 +21,7 @@ object RuleEngine {
     )
 
     // Evaulate the DetectionEvent across our rules suite
-    fun evaluate(event: DetectionEvent): String? {
+    fun evaluate(event: DetectionEvent): RuleResult? {
         return rules
             .map { it.evaluate(event) }
             .firstOrNull { it != null }

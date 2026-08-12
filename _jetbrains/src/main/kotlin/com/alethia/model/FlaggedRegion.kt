@@ -1,11 +1,12 @@
 package com.alethia.model
 
 /**
- * Represents a single region of code flagged as potentially AI-generated.
+ * Represents a single region of code flagged as potentially suspicious.
  * Instances accumulate during a session and are serialized into git note
  * on commit, then cleared. Schema matches the VSCode extension exactly.
  */
 data class FlaggedRegion(
+    val eventType: String,      // Standardized EventID
     val file: String,           // Absolute path the file containing the flagged region
     val startLine: Int,         // Line number the flagged region begins (1-indexed)
     val endLine: Int,           // Line number the flagged region ends (1-indexed)

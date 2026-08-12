@@ -5,6 +5,7 @@ package com.alethia.model
  * Acts as a serializable wrapper class for FlaggedRegion.
  */
 class SerializableFlaggedRegion {
+    var eventType: String = ""
     var file: String = ""
     var startLine: Int = 0
     var endLine: Int = 0
@@ -22,6 +23,7 @@ class SerializableFlaggedRegion {
      */
     companion object {
         fun from(flag: FlaggedRegion) = SerializableFlaggedRegion().apply {
+            eventType = flag.eventType
             file = flag.file
             startLine = flag.startLine
             endLine = flag.endLine
@@ -38,6 +40,7 @@ class SerializableFlaggedRegion {
      * data.
      */
     fun toFlaggedRegion() = FlaggedRegion(
+        eventType = eventType,
         file = file,
         startLine = startLine,
         endLine = endLine,
