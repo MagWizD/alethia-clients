@@ -36,6 +36,7 @@ object AlethiaInstaller {
             return
         }
 
+        // For each repo in the project, run all install functions
         repos.forEach { repo ->
             val repoPath = repo.root.path
             LOG.info("AlethiaInstaller: setting up repo at $repoPath")
@@ -51,11 +52,6 @@ object AlethiaInstaller {
      * If the hook exists, append the Alethia block to the end.
      * Uses a marker to prevent duplicate installations.
      *
-     * What the hook does:
-     * - Feth remote notes into a temp ref
-     * - Merge notes with local to avoid conflicts
-     * - Push the merged notes to remote repo
-     *
      * We need to ensure that we never block the contributor's push.
      * We do this by using an OR to log failures and do not block.
      *
@@ -70,20 +66,19 @@ object AlethiaInstaller {
 
         // The block of alethia configs for the pre-push hook
         val alethiaBlock = """
-            
+    
             $alethiaMarker
             
-            # Fetch remote notes into temp ref
-            git fetch origin refs/notes/alethia:refs/notes/aletheia-remote 2>/dev/null || \
-                echo "[Alethia] Warning: could not fetch remote notes -> skipping merge"
+            # Prevent recursive hook calls when pushing notes
+            if [ "${'$'}ALETHIA_PUSHING_NOTES" = "1" ]; then
+                exit 0
+            fi
             
-            # Merge remote notes with local
-            git notes --ref=refs/notes/alethia merge refs/notes/aletheia-remote 2>/dev/null || \
-                echo "[Alethia] Warning: could not merge remote notes"
-            
-            # Push notes to remote
-            git push origin refs/notes/alethia 2>/dev/null || \
+            # Force push notes to remote
+            ALETHIA_PUSHING_NOTES=1 git push origin refs/notes/alethia --force 2>/dev/null || \
                 echo "[Alethia] Warning: could not push notes to remote, notes may not be visible to Themis"
+            
+            exit 0
         """.trimIndent()
 
         // Check for existing hook file
