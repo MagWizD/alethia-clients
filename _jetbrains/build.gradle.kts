@@ -19,6 +19,8 @@ plugins {
 dependencies {
     // JUnit 4: Test framework used for all Alethia Unit Tests
     testImplementation("junit:junit:4.13.2")
+    // JSON library for object JSON creation and parsing
+    implementation("com.google.code.gson:gson:2.10.1")
 
     // IntelliJ Platform Gradle Plugin Dependencies Extension
     // Defines which IDE to download for the sandbox
