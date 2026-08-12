@@ -1,11 +1,13 @@
 package com.alethia
 
 import com.alethia.services.LoggingFactory
+import com.alethia.session.AlethiaStateService
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.components.service
 import com.intellij.openapi.ui.Messages
 import java.io.File
+import java.util.logging.Logger
 
 /**
  * Temporary test action — verifies plugin classes, logging,
@@ -13,13 +15,18 @@ import java.io.File
  */
 class AlethiaTestAction : AnAction("Alethia Test") {
 
+    private val LOG = Logger.getLogger(AlethiaTestAction::class.java.name)
+
     override fun actionPerformed(e: AnActionEvent) {
-        val project = e.project
-        val projectName = project?.name ?: "NULL"
-        val projectPath = project?.basePath ?: "NULL"
+        val project = e.project ?: return
+        val projectName = project.name ?: "NULL"
+        val projectPath = project.basePath ?: "NULL"
 
         println("Project: $projectName")
         println("Project path: $projectPath")
+
+        val stateService = project.service<AlethiaStateService>()
+        LOG.info("lastCommitSha from getter: ${stateService.lastCommitSha?.take(7) ?: "null"}")
 
         // Print exact path the logger would write to
         val logDir = File(System.getProperty("user.home"), ".alethia")
