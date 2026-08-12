@@ -1,5 +1,7 @@
 package com.alethia.startup
 
+import com.alethia.services.LoggingFactory
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
 import com.intellij.openapi.vcs.ProjectLevelVcsManager
@@ -24,6 +26,9 @@ class AlethiaStartupActivity: ProjectActivity {
      * @param project The project that just opened
      */
     override suspend fun execute(project: Project) {
+        // Initialize the logging service
+        service<LoggingFactory>()
+
         LOG.info("AlethiaStartupActivity: project opened - attempt to install")
 
         // Retrieve the Repo Manager to de
