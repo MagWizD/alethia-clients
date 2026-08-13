@@ -1,8 +1,8 @@
 package com.alethia.detection.listeners
 
 import com.alethia.detection.AlethiaEventHandler
-import com.alethia.detection.events.DetectionEvent
-import com.alethia.detection.events.EventSource
+import com.alethia.model.DetectionEvent
+import com.alethia.model.EventSource
 import com.alethia.utils.getRepoRoot
 import com.intellij.openapi.components.service
 import java.util.logging.Logger

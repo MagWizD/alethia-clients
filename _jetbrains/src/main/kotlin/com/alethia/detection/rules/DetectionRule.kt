@@ -1,6 +1,6 @@
 package com.alethia.detection.rules
 
-import com.alethia.detection.events.DetectionEvent
+import com.alethia.model.DetectionEvent
 import com.alethia.model.RuleResult
 
 /**
