@@ -2,7 +2,6 @@ package com.alethia.detection.rules
 
 import com.alethia.config.DetectionConfig
 import com.alethia.model.DetectionEvent
-import com.alethia.model.RuleResult
 
 /**
  * An object that evaluates a DetectionEvent against all the registered rules.

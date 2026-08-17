@@ -1,7 +1,6 @@
 package com.alethia.detection.rules
 
 import com.alethia.model.DetectionEvent
-import com.alethia.model.RuleResult
 
 /**
  * An interface that all teh detection rules implement.

@@ -3,7 +3,6 @@ package com.alethia.detection.rules
 import com.alethia.config.DetectionConfig
 import com.alethia.model.DetectionEvent
 import com.alethia.model.EventSource
-import com.alethia.model.RuleResult
 
 /**
  * Flagrs large insertions that exceed the configured thresholds.
