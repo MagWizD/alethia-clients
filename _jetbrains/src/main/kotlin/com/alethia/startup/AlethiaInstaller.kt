@@ -1,5 +1,6 @@
 package com.alethia.startup
 
+import com.alethia.config.AlethiaConstants
 import java.util.logging.Logger
 import com.intellij.openapi.project.Project
 import git4idea.repo.GitRepositoryManager
@@ -58,26 +59,20 @@ object AlethiaInstaller {
      * @param repoPath Absolute path to the repository root
      */
     private fun installGitHook(repoPath: String) {
-        val hooksDir = File(repoPath, ".git/hooks")
-        val hookFile = File(hooksDir, "pre-push")
+        val hooksDir = File(repoPath, AlethiaConstants.HOOKS_DIR)
+        val hookFile = File(hooksDir, AlethiaConstants.PRE_PUSH_HOOK)
 
         // Marker we use to set/find our managed section
-        val alethiaMarker = "# alethia-managed"
+        val alethiaMarker = AlethiaConstants.HOOK_MARKER
 
         // The block of alethia configs for the pre-push hook
         val alethiaBlock = """
-    
-            $alethiaMarker
-            
-            # Prevent recursive hook calls when pushing notes
-            if [ "${'$'}ALETHIA_PUSHING_NOTES" = "1" ]; then
+            ${AlethiaConstants.HOOK_MARKER}
+            if [ "${'$'}${AlethiaConstants.PUSH_GUARD_VAR}" = "1" ]; then
                 exit 0
             fi
-            
-            # Force push notes to remote
-            ALETHIA_PUSHING_NOTES=1 git push origin refs/notes/alethia --force 2>/dev/null || \
+            ${AlethiaConstants.PUSH_GUARD_VAR}=1 git push origin ${AlethiaConstants.NOTES_REF} --force 2>/dev/null || \
                 echo "[Alethia] Warning: could not push notes to remote, notes may not be visible to Themis"
-            
             exit 0
         """.trimIndent()
 
@@ -120,12 +115,9 @@ object AlethiaInstaller {
     private fun installGitConfig(repoPath: String) {
         // Create config mappings to enable note copying on rebase/amend
         val configs = mapOf(
-            // Tell git which notes to copy when commits are rewritten
-            "notes.rewriteRef" to "refs/notes/alethia",
-            // Copy notes automatically when git rebase occurs
-            "notes.rewrite.rebase" to "true",
-            // Copy notes automatically when git amend occurs
-            "notes.rewrite.amend" to "true"
+            AlethiaConstants.CONFIG_REWRITE_REF    to AlethiaConstants.NOTES_REF,
+            AlethiaConstants.CONFIG_REWRITE_REBASE to "true",
+            AlethiaConstants.CONFIG_REWRITE_AMEND  to "true"
         )
 
         // For each config above, create a process outside of the JVM to udpate the git config
