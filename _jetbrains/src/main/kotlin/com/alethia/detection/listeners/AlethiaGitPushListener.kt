@@ -1,5 +1,6 @@
 package com.alethia.detection.listeners
 
+import com.alethia.config.AlethiaConstants
 import java.util.logging.Logger
 import git4idea.push.GitPushListener
 import git4idea.push.GitPushRepoResult
@@ -54,7 +55,7 @@ class AlethiaGitPushListener : GitPushListener {
         // Use temporary namespace for remote notes before merging them
         val fetchExit = ProcessBuilder(
             "git", "fetch", "origin",
-            "refs/notes/alethia:refs/notes/alethia-remote"
+            "refs/notes/alethia:${AlethiaConstants.NOTES_REMOTE_REF}",
         )
             .directory(dir)
             .start()
@@ -69,9 +70,9 @@ class AlethiaGitPushListener : GitPushListener {
         val mergeExit = ProcessBuilder(
             "git",
             "notes",
-            "--ref=refs/notes/alethia",
+            "--ref=${AlethiaConstants.NOTES_REF}",
             "merge",
-            "refs/notes/alethia-remote"
+            AlethiaConstants.NOTES_REMOTE_REF
         )
             .directory(dir)
             .start()
@@ -84,7 +85,7 @@ class AlethiaGitPushListener : GitPushListener {
         // Step 3: Push the merged notes to remote
         val pushExit = ProcessBuilder(
             "git", "push", "origin",
-            "refs/notes/alethia"
+            AlethiaConstants.NOTES_REF
         )
             .directory(dir)
             .start()
