@@ -14,7 +14,7 @@ Alethia-clients/
 └── _jetbrains/       # JetBrains plugin (Kotlin / Gradle)
 ```
 
-Each client is an independent project with its own build system, dependencies, and deployment target. They share the same detection logic conceptually but are implemented separately for each platform. THis repository will split once both extensions are stabe enough to version independently, for a small team a single repo enables us to more easily managed the currently evolving schema
+Each client is an independent project with its own build system, dependencies, and deployment target. They share the same detection logic conceptually but are implemented separately for each platform. This repository will split once both extensions are stable enough to version independently, for a small team a single repo enables us to more easily manage the currently evolving schema
 
 ---
 
