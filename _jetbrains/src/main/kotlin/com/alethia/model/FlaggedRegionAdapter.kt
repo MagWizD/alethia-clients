@@ -46,9 +46,9 @@ class FlaggedRegionAdapter : JsonSerializer<FlaggedRegion>, JsonDeserializer<Fla
         return FlaggedRegion(
             eventType = obj.get("eventType").asString ?: "",
             file = obj.get("file").asString ?: "",
-            startLine = obj.get("startLine").asInt ?: -1,
-            endLine = obj.get("endLine").asInt ?: -1,
-            charCount = obj.get("charCount").asInt ?: 0,
+            startLine = obj.get("startLine").asInt,
+            endLine = obj.get("endLine").asInt,
+            charCount = obj.get("charCount").asInt,
             rationale = obj.get("rationale").asString ?: "",
             timeStamp = obj.get("timeStamp").asString ?: ""
         )

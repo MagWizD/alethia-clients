@@ -158,7 +158,7 @@ class AlethiaCheckinHandler(private val panel: CheckinProjectPanel) : CheckinHan
             // Log outcome and work done
             if (exitCode == 0) {
                 LOG.info("AlethiaCheckinHandler: note written for commit ${sha.take(7)}, ${allFlags.size} flag(s)")
-                saveSnapshot(repoPath, sha);
+                saveSnapshot(repoPath, sha)
                 sessionState.clearFlags()
                 sessionState.lastCommitSha = sha
             } else {

@@ -7,8 +7,8 @@ package com.alethia.model
  * fire for the same insertion, the higher priority takes precedence.
  */
 enum class EventSource(val priority: Int) {
-    DOCUMENT_CHANGE(0),     // Large change detected ,source unknown
-    CLIPBOARD_PASTE(1),     // Confirmed clipboard paste
+    DOCUMENT_CHANGE(priority = 0),     // Large change detected ,source unknown
+    CLIPBOARD_PASTE(priority = 1),     // Confirmed clipboard paste
 }
 
 /**
