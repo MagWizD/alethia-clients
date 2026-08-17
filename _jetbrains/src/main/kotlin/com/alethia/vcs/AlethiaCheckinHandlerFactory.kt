@@ -1,6 +1,8 @@
 package com.alethia.vcs
 
+import com.alethia.config.AlethiaConstants
 import com.alethia.model.FlaggedRegion
+import com.alethia.model.FlaggedRegionAdapter
 import com.alethia.session.AlethiaStateService
 import com.google.gson.GsonBuilder
 import com.intellij.openapi.components.service
@@ -36,6 +38,11 @@ class AlethiaCheckinHandlerFactory : VcsCheckinHandlerFactory(GitVcs.getKey()) {
  */
 class AlethiaCheckinHandler(private val panel: CheckinProjectPanel) : CheckinHandler() {
     private val LOG = Logger.getLogger(AlethiaCheckinHandler::class.java.name)
+
+    private val gson = GsonBuilder()
+        .setPrettyPrinting()
+        .registerTypeAdapter(FlaggedRegion::class.java, FlaggedRegionAdapter())
+        .create()
 
     /**
      * Called after a commit succeeds.
@@ -88,18 +95,18 @@ class AlethiaCheckinHandler(private val panel: CheckinProjectPanel) : CheckinHan
             LOG.info("AlethiaCheckinHandler: saveSnapshot called for ${sha.take(10)}")
 
             // Retrieve the state file
-            val stateFile = File(repoPath, ".idea/alethia-state.xml")
+            val stateFile = File(repoPath, AlethiaConstants.STATE_FILE_PATH)
             if (!stateFile.exists()) {
                 LOG.warning("AlethiaCheckinHandler: could not find alethia-state.xml — skipping snapshot")
                 return
             }
 
             // Create the snapshot directory
-            val snapshotDir = File(repoPath, ".alethia/snapshots")
+            val snapshotDir = File(repoPath, AlethiaConstants.SNAPSHOTS_DIR)
             snapshotDir.mkdirs()
 
             // Copy state file with SHA in name
-            val snapshotFile = File(snapshotDir, "alethia-state-${sha.take(10)}.xml")
+            val snapshotFile = File(snapshotDir, "${AlethiaConstants.SNAPSHOTS_PREFIX}${sha.take(10)}.xml")
             stateFile.copyTo(snapshotFile, overwrite = true)
 
             LOG.info("AlethiaCheckinHandler: snapshot saved -> ${snapshotFile.name}")
@@ -129,7 +136,8 @@ class AlethiaCheckinHandler(private val panel: CheckinProjectPanel) : CheckinHan
 
             // Build the JSON block that will be saved in the note
             val noteContent = buildNoteJson(allFlags)
-            // Create a temp file, avoids Windows Shell quote handling issues (Occurred in Hackathon)
+
+            // Create a temp file, avoids Windows shell quote handling issues (Occurred in Hackathon)
             val tempFile = File(repoPath, ".git/alethia_temp_note.json")
             tempFile.writeText(noteContent)
 
@@ -189,27 +197,16 @@ class AlethiaCheckinHandler(private val panel: CheckinProjectPanel) : CheckinHan
             // Check if the output was empty
             if (output.isBlank()) return emptyList()
 
-            // Create Gson Object
-            val gson = com.google.gson.Gson()
             // Deserialize the retrieved JSON objects
             val root = gson.fromJson(output, com.google.gson.JsonObject::class.java)
             // Feth the alethia block
             val alethia = root.getAsJsonObject("alethia") ?: return emptyList()
             // Fetch the flagged regions list from the alethia block
             val regions = alethia.getAsJsonArray("flaggedRegions") ?: return emptyList()
-            // Map the Flag JSON objects to FlaggedRegion objects
-            regions.map { element ->
-                val obj = element.asJsonObject
-                FlaggedRegion(
-                    eventType = obj.get("eventType")?.asString ?: "",
-                    file = obj.get("file")?.asString ?: "",
-                    startLine = obj.get("startLine")?.asInt ?: 0,
-                    endLine = obj.get("endLine")?.asInt ?: 0,
-                    charCount = obj.get("charCount")?.asInt ?: 0,
-                    rationale = obj.get("rationale")?.asString ?: "",
-                    timeStamp = obj.get("timeStamp")?.asString ?: ""
-                )
-            }
+
+            // Deserialize the FlaggedRegion objects via a custom deserializer
+            gson.fromJson(regions, Array<FlaggedRegion>::class.java).toList()
+
         } catch (e: Exception) {
             LOG.warning("AlethiaCheckinHandler: could not parse existing note: ${e.message}")
             emptyList()
@@ -221,30 +218,20 @@ class AlethiaCheckinHandler(private val panel: CheckinProjectPanel) : CheckinHan
      * Commit SHA is intentionally excluded, git already knows which
      * commit the note is attached to, and a stored SHA becomes
      * incorrect if the commit is later rebased or amended.
+     * GsonBuilder uses a customer serializer to serialize
+     * the individual FlaggerRegion objects.
      *
      * @param flags     The list of flagged regions to serialize
      * @return JSON     string to be written as the git note content
      */
     private fun buildNoteJson(flags: List<FlaggedRegion>): String {
-        // Create the builder for JSON objects
-        val gson = GsonBuilder().setPrettyPrinting().create()
         // Json object format
         val note = mapOf(
             "alethia"               to mapOf(
-                "version"           to "0.1.0",
+                "version"           to AlethiaConstants.PLUGIN_VERSION,
                 "generatedAt"       to java.time.Instant.now().toString(),
                 "flagCount"         to flags.size,
-                "flaggedRegions"    to flags.map { flag ->
-                    mapOf(
-                        "eventType" to flag.eventType,
-                        "file"      to flag.file,
-                        "startLine" to flag.startLine,
-                        "endLine"   to flag.endLine,
-                        "charCount" to flag.charCount,
-                        "rationale" to flag.rationale,
-                        "timeStamp" to flag.timeStamp
-                    )
-                }
+                "flaggedRegions"    to flags
             )
         )
         return gson.toJson(note)
