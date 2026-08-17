@@ -91,7 +91,7 @@ object AlethiaInstaller {
             // Create the Hooks directory if it doesn't already exist
             hooksDir.mkdirs()
             // Create a new file with the Alethia block
-            hookFile.writeText("#!/bin/sh\n$alethiaBlock\nexit 0\n")
+            hookFile.writeText("#!/bin/sh\n$alethiaBlock\n")
             // Make it executable
             hookFile.setExecutable(true)
             LOG.info("AlethiaInstaller: created pre-push hook file")
