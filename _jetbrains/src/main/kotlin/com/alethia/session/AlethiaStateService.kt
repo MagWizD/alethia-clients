@@ -1,5 +1,6 @@
 package com.alethia.session
 
+import com.alethia.config.AlethiaConstants
 import com.alethia.model.FlaggedRegion
 import com.alethia.model.SerializableFlaggedRegion
 import com.intellij.ide.util.PropertiesComponent
@@ -33,7 +34,7 @@ import java.util.logging.Logger
     storages = [Storage("alethia-state.xml")]   // Filename
 )
 class AlethiaStateService(private val project : Project) :
-    PersistentStateComponent<AlethiaStateService.State>, SessionState {
+    PersistentStateComponent<AlethiaStateService.State> {
 
     private val LOG = Logger.getLogger(AlethiaStateService::class.java.name)
 
@@ -53,7 +54,7 @@ class AlethiaStateService(private val project : Project) :
     private var myState = State()
     // Key for storing the last commit SHA in PropertiesComponent
     // This 'com.alethia' is a namespace to avoid naming conflicts with other plugins
-    private val LAST_COMMIT_SHA_KEY = "com.alethia.lastcommitsha"
+    private val LAST_COMMIT_SHA_KEY = AlethiaConstants.LAST_COMMIT_SHA_KEY
     // PropertiesComponent instance, application level key/value store
     // Writes immediately to disk on every setValue call.
     // Pass in the project so that we don't conflict with other repos
@@ -84,7 +85,7 @@ class AlethiaStateService(private val project : Project) :
      * Adds a FlaggedRegion to the session queue.
      * Converts to SerializableFlaggedRegion for storage.
      */
-    override fun addFlag(flag: FlaggedRegion) {
+    fun addFlag(flag: FlaggedRegion) {
         myState.flaggedRegions.add(SerializableFlaggedRegion.from(flag))
     }
 
@@ -92,14 +93,14 @@ class AlethiaStateService(private val project : Project) :
      * Retrieves all queued flags as FlaggedRegion objects.
      * Converts from SerializableFlaggedRegion back to FlaggedRegion
      */
-    override fun getFlags(): List<FlaggedRegion> {
+    fun getFlags(): List<FlaggedRegion> {
         return myState.flaggedRegions.map { it.toFlaggedRegion() }
     }
 
     /**
      * Tally and return the number of queued flags in the current session.
      */
-    override fun flagCount(): Int {
+    fun flagCount(): Int {
         return myState.flaggedRegions.size
     }
 
@@ -107,7 +108,7 @@ class AlethiaStateService(private val project : Project) :
      * Clears all queued flags, called after they are written
      * to a git note on commit.
      */
-    override fun clearFlags() {
+    fun clearFlags() {
        myState.flaggedRegions.clear()
     }
 
@@ -121,7 +122,7 @@ class AlethiaStateService(private val project : Project) :
      * before a clean shutdown.
      * Returns null is no commit has been processed yet, hence the '?'
      */
-    override var lastCommitSha: String?
+    var lastCommitSha: String?
         get() = props.getValue(LAST_COMMIT_SHA_KEY).also {
             LOG.info("AlethiaStateService: lastCommitSha read = ${it?.take(7) ?: "null"}...")
         }

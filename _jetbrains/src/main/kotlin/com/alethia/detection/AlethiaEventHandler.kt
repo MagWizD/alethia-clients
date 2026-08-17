@@ -7,7 +7,6 @@ import com.alethia.detection.rules.RuleEngine
 import com.alethia.services.LoggingFactory
 import com.alethia.services.LoggingService
 import com.alethia.session.AlethiaStateService
-import com.alethia.session.SessionState
 import com.alethia.utils.scrubPath
 
 import com.intellij.openapi.components.service
@@ -32,7 +31,7 @@ import com.intellij.openapi.project.Project
  *   suppressed, the more specific source will win.
  */
 class AlethiaEventHandler(
-    private val sessionState: SessionState,
+    private val sessionState: AlethiaStateService,
     private val logging: LoggingService
 ) {
 
