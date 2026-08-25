@@ -2,7 +2,6 @@ package com.alethia.session
 
 import com.alethia.config.AlethiaConstants
 import com.alethia.model.FlaggedRegion
-import com.alethia.model.SerializableFlaggedRegion
 import com.intellij.ide.util.PropertiesComponent
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.State
@@ -48,7 +47,7 @@ class AlethiaStateService(private val project : Project) :
      * do not auto-serialize.
       */
     class State {
-        var flaggedRegions: MutableList<SerializableFlaggedRegion> = mutableListOf()
+        var flaggedRegions: MutableList<FlaggedRegion> = mutableListOf()
     }
     // Current in-memory state, IntelliJ will read from/write to this first
     private var myState = State()
@@ -86,7 +85,7 @@ class AlethiaStateService(private val project : Project) :
      * Converts to SerializableFlaggedRegion for storage.
      */
     fun addFlag(flag: FlaggedRegion) {
-        myState.flaggedRegions.add(SerializableFlaggedRegion.from(flag))
+        myState.flaggedRegions.add(flag)
     }
 
     /**
@@ -94,7 +93,7 @@ class AlethiaStateService(private val project : Project) :
      * Converts from SerializableFlaggedRegion back to FlaggedRegion
      */
     fun getFlags(): List<FlaggedRegion> {
-        return myState.flaggedRegions.map { it.toFlaggedRegion() }
+        return myState.flaggedRegions.map { it }
     }
 
     /**
