@@ -9,6 +9,18 @@ import com.intellij.openapi.vcs.VcsMappingListener
 import git4idea.repo.GitRepositoryManager
 import java.util.logging.Logger
 
+
+/**
+ * Runs automatically when a project opens in the IDE.
+ * Registered in plugin.xml as a postStartupActivity.
+ *
+ * Waits for VCS repository mapping to complete before running
+ * the installer, git repos are not immediately available when
+ * a project first opens. GitRepositoryManager.repositories returns
+ * empty until git4idea finishes scanning the project directories.
+ * Subscribes to VCS_CONFIGURATION_CHANGED and runs AlethiaInstaller
+ * only once repositories are confirmed available.
+ */
 class AlethiaStartupActivity: ProjectActivity {
 
     private val LOG = Logger.getLogger(AlethiaStartupActivity::class.java.name)
