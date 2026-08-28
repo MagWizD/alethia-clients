@@ -22,6 +22,10 @@ dependencies {
     // JSON library for object JSON creation and parsing
     implementation("com.google.code.gson:gson:2.10.1")
 
+    // SLF4J
+    implementation("org.slf4j:slf4j-api:2.0.18")
+    implementation("org.slf4j:slf4j-jdk14:2.0.18")
+
     // IntelliJ Platform Gradle Plugin Dependencies Extension
     // Defines which IDE to download for the sandbox
     // and what bundled plugins are required at runtime.
