@@ -5,7 +5,7 @@ import git4idea.repo.GitRepositoryManager
 import com.intellij.openapi.project.Project
 
 /**
- * Strips the absolute machine-specifc prefix from a file path, returning
+ * Strips the machine-specific prefix from a file path, returning
  * only the path relative to the repository root.
  * Prevents leaking developer usernames and machine paths into
  * git notes.
