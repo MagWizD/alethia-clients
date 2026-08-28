@@ -7,7 +7,7 @@ import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.project.Project
-import java.util.logging.Logger
+import org.slf4j.LoggerFactory
 
 /**
  * Persistent storage service for Alethia session data.
@@ -35,7 +35,7 @@ import java.util.logging.Logger
 class AlethiaStateService(private val project : Project) :
     PersistentStateComponent<AlethiaStateService.State> {
 
-    private val LOG = Logger.getLogger(AlethiaStateService::class.java.name)
+    private val LOG = LoggerFactory.getLogger(AlethiaStateService::class.java)
 
     // -------------- Set Service constants/variables ------------------
 
@@ -72,10 +72,7 @@ class AlethiaStateService(private val project : Project) :
      * Replaces the current in-memory state with restored data from
      * the disk.
      */
-    override fun loadState(state: State) {
-        // Restore current state to state loaded from disk
-        myState = state
-    }
+    override fun loadState(state: State) { myState = state }
 
     // -------------- Implement the FlaggedRegion API ------------------
     // Implement functions to update flags within the current state
@@ -84,32 +81,24 @@ class AlethiaStateService(private val project : Project) :
      * Adds a FlaggedRegion to the session queue.
      * Converts to SerializableFlaggedRegion for storage.
      */
-    fun addFlag(flag: FlaggedRegion) {
-        myState.flaggedRegions.add(flag)
-    }
+    fun addFlag(flag: FlaggedRegion) { myState.flaggedRegions.add(flag) }
 
     /**
      * Retrieves all queued flags as FlaggedRegion objects.
      * Converts from SerializableFlaggedRegion back to FlaggedRegion
      */
-    fun getFlags(): List<FlaggedRegion> {
-        return myState.flaggedRegions.map { it }
-    }
+    fun getFlags(): List<FlaggedRegion> { return myState.flaggedRegions.map { it } }
 
     /**
      * Tally and return the number of queued flags in the current session.
      */
-    fun flagCount(): Int {
-        return myState.flaggedRegions.size
-    }
+    fun flagCount(): Int { return myState.flaggedRegions.size }
 
     /**
      * Clears all queued flags, called after they are written
      * to a git note on commit.
      */
-    fun clearFlags() {
-       myState.flaggedRegions.clear()
-    }
+    fun clearFlags() { myState.flaggedRegions.clear() }
 
     // -------------- Implement the lastCommitSha API ------------------
     // Implement functions to load and restore last commit sha

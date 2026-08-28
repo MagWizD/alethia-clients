@@ -5,11 +5,11 @@ import com.alethia.model.DetectionEvent
 import com.alethia.model.EventSource
 import com.alethia.utils.getRepoRoot
 import com.intellij.openapi.components.service
-import java.util.logging.Logger
 import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
+import org.slf4j.LoggerFactory
 
 /**
  * Thin adapter - Listens to document changes and forwards them
@@ -19,7 +19,7 @@ class AlethiaDocumentListener(private val project: Project) : DocumentListener {
 
     // Get the handler via the project service
     private val handler = project.service<AlethiaEventHandler>()
-    private val LOG = Logger.getLogger(AlethiaGitPushListener::class.java.name)
+    private val LOG = LoggerFactory.getLogger(AlethiaDocumentListener::class.java)
 
     // Record last time a file document change occurred
     private var lastEditTime = System.currentTimeMillis()

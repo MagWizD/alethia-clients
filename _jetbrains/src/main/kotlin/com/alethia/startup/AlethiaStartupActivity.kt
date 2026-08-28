@@ -1,13 +1,11 @@
 package com.alethia.startup
 
-import com.alethia.services.LoggingFactory
-import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
 import com.intellij.openapi.vcs.ProjectLevelVcsManager
 import com.intellij.openapi.vcs.VcsMappingListener
 import git4idea.repo.GitRepositoryManager
-import java.util.logging.Logger
+import org.slf4j.LoggerFactory
 
 
 /**
@@ -23,7 +21,7 @@ import java.util.logging.Logger
  */
 class AlethiaStartupActivity: ProjectActivity {
 
-    private val LOG = Logger.getLogger(AlethiaStartupActivity::class.java.name)
+    private val LOG = LoggerFactory.getLogger(AlethiaStartupActivity::class.java)
 
     /**
      * Called by IntelliJ after the project has fully loaded.
@@ -38,8 +36,16 @@ class AlethiaStartupActivity: ProjectActivity {
      * @param project The project that just opened
      */
     override suspend fun execute(project: Project) {
-        // Initialize the logging service
-        service<LoggingFactory>()
+        // Load logging configuration
+        // Searches the module (com.alethia) for a resourse with name "logging.properties",
+        // the provides the found resource, if not null (hence the '?'), to the LogManager
+        // which sets the log levels, format, log output directory, etc.
+        val configStream = AlethiaStartupActivity::class.java
+            .getResourceAsStream("/logging.properties")
+        configStream?.let {
+            java.util.logging.LogManager.getLogManager().readConfiguration(it)
+            it.close()
+        }
 
         LOG.info("AlethiaStartupActivity: project opened - attempt to install")
 
@@ -64,7 +70,7 @@ class AlethiaStartupActivity: ProjectActivity {
                     LOG.info("AlethiaStartupActivity: installer starting")
                     AlethiaInstaller.install(project)
                 } else {
-                    LOG.warning("AlethiaStartupActivity: repos still empty after mapping - skipping")
+                    LOG.warn("AlethiaStartupActivity: repos still empty after mapping - skipping")
                 }
             }
         )
