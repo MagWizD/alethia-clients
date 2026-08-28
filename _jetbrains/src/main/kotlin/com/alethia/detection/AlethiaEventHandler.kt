@@ -4,13 +4,13 @@ import com.alethia.model.DetectionEvent
 import com.alethia.model.EventSource
 import com.alethia.model.FlaggedRegion
 import com.alethia.detection.rules.RuleEngine
-import com.alethia.services.LoggingFactory
-import com.alethia.services.LoggingService
 import com.alethia.session.AlethiaStateService
 import com.alethia.utils.scrubPath
 
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
+import org.slf4j.LoggerFactory
+
 
 /**
  * Single entry point for all detection events.
@@ -30,28 +30,10 @@ import com.intellij.openapi.project.Project
  *   DOCUMENT_CHANGE for the same file within PASTE_WINDOW_MS is
  *   suppressed, the more specific source will win.
  */
-class AlethiaEventHandler(
-    private val sessionState: AlethiaStateService,
-    private val logging: LoggingService
-) {
+class AlethiaEventHandler(private val project: Project) {
 
-    /**
-     * Secondary constructor: This is used by IntelliJ when instantiating
-     * this class as service. Resolves SessionState
-     * and LoggingService from the IntelliJ service maps.
-     *
-     * @param project The currently open project, gets injected by IntelliJ
-     */
-    constructor(project: Project) : this(
-        sessionState = project.service<AlethiaStateService>(),
-        logging = service<LoggingFactory>()
-    )
-
-    // Fecth the logger from LogService
-    private val LOG = logging.getLogger(AlethiaEventHandler::class.java.name)
-
-    // Track recent paste events by file path
-    // Used to suppress duplicate events for the same insertion
+    private val sessionState = project.service<AlethiaStateService>()
+    private val LOG = LoggerFactory.getLogger(AlethiaEventHandler::class.java)
     private val recentPastes = mutableMapOf<String, Long>()
     private val PASTE_WINDOW_MS = 500L
 
