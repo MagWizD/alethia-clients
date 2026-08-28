@@ -1,6 +1,7 @@
 package com.alethia.vcs
 
 import com.alethia.config.AlethiaConstants
+import com.alethia.detection.AlethiaEventHandler
 import com.alethia.model.FlaggedRegion
 import com.alethia.model.FlaggedRegionAdapter
 import com.alethia.session.AlethiaStateService
@@ -11,9 +12,9 @@ import com.intellij.openapi.vcs.changes.CommitContext
 import com.intellij.openapi.vcs.checkin.CheckinHandler
 import com.intellij.openapi.vcs.checkin.VcsCheckinHandlerFactory
 import git4idea.GitVcs
-import java.util.logging.Logger
 import git4idea.repo.GitRepositoryManager
 import java.io.File
+import org.slf4j.LoggerFactory
 
 /**
  * Registers Alethia into IntelliJ's commit pipeline.
@@ -37,8 +38,7 @@ class AlethiaCheckinHandlerFactory : VcsCheckinHandlerFactory(GitVcs.getKey()) {
  * to git notes and cleared from session state.
  */
 class AlethiaCheckinHandler(private val panel: CheckinProjectPanel) : CheckinHandler() {
-    private val LOG = Logger.getLogger(AlethiaCheckinHandler::class.java.name)
-
+    private val LOG = LoggerFactory.getLogger(AlethiaCheckinHandler::class.java)
     private val gson = GsonBuilder()
         .setPrettyPrinting()
         .registerTypeAdapter(FlaggedRegion::class.java, FlaggedRegionAdapter())
@@ -57,7 +57,7 @@ class AlethiaCheckinHandler(private val panel: CheckinProjectPanel) : CheckinHan
         // Get all repos in current project
         val repos = GitRepositoryManager.getInstance(project).repositories
         if (repos.isEmpty()) {
-            LOG.warning("AlethiaCheckinHandler: no git repos found -> skipping note write")
+            LOG.warn("AlethiaCheckinHandler: no git repos found -> skipping note write")
             return
         }
 
@@ -67,7 +67,7 @@ class AlethiaCheckinHandler(private val panel: CheckinProjectPanel) : CheckinHan
 
             // Get the current HEAD SHA hash, this is the commit we just made
             val sha = repo.currentRevision ?: run {
-                LOG.warning("AlethiaCheckinHandler: could not get HEAD SHA for $repoPath")
+                LOG.warn("AlethiaCheckinHandler: could not get HEAD SHA for $repoPath")
                 return@forEach
             }
 
@@ -97,7 +97,7 @@ class AlethiaCheckinHandler(private val panel: CheckinProjectPanel) : CheckinHan
             // Retrieve the state file
             val stateFile = File(repoPath, AlethiaConstants.STATE_FILE_PATH)
             if (!stateFile.exists()) {
-                LOG.warning("AlethiaCheckinHandler: could not find alethia-state.xml — skipping snapshot")
+                LOG.warn("AlethiaCheckinHandler: could not find alethia-state.xml — skipping snapshot")
                 return
             }
 
@@ -111,7 +111,7 @@ class AlethiaCheckinHandler(private val panel: CheckinProjectPanel) : CheckinHan
 
             LOG.info("AlethiaCheckinHandler: snapshot saved -> ${snapshotFile.name}")
         } catch (e: Exception) {
-            LOG.warning("AlethiaCheckinHandler: failed to save snapshot: ${e.message}")
+            LOG.warn("AlethiaCheckinHandler: failed to save snapshot: ${e.message}")
         }
     }
 
@@ -162,11 +162,11 @@ class AlethiaCheckinHandler(private val panel: CheckinProjectPanel) : CheckinHan
                 sessionState.clearFlags()
                 sessionState.lastCommitSha = sha
             } else {
-                LOG.warning("AlethiaCheckinHandler: git notes add failed with exit code $exitCode")
+                LOG.warn("AlethiaCheckinHandler: git notes add failed with exit code $exitCode")
             }
 
         } catch (e: Exception) {
-            LOG.warning("AlethiaCheckinHandler: failed to write git note: ${e.message}")
+            LOG.warn("AlethiaCheckinHandler: failed to write git note: ${e.message}")
         }
     }
 
@@ -208,7 +208,7 @@ class AlethiaCheckinHandler(private val panel: CheckinProjectPanel) : CheckinHan
             gson.fromJson(regions, Array<FlaggedRegion>::class.java).toList()
 
         } catch (e: Exception) {
-            LOG.warning("AlethiaCheckinHandler: could not parse existing note: ${e.message}")
+            LOG.warn("AlethiaCheckinHandler: could not parse existing note: ${e.message}")
             emptyList()
         }
     }
