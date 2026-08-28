@@ -53,6 +53,9 @@ object AlethiaConstants {
 
     // PLUGINS ===========================================
     /** Current plugin version */
-    const val PLUGIN_VERSION = "0.1.0"
+    val PLUGIN_VERSION: String
+        get() = com.intellij.ide.plugins.PluginManagerCore
+            .getPlugin(com.intellij.openapi.extensions.PluginId.getId("com.alethia.plugin"))
+            ?.version ?: "unknown"
 
 }
