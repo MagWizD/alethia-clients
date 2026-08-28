@@ -1,93 +1,119 @@
 # alethia-clients
 
-Client-side detection for the Alethia platform. This repository contains the IDE integrations responsible for passively monitoring developer activity, detecting suspicious code insertions, and serializing flagged metadata as git notes on each commit. The notes are then pushed to remote where the Themis reporting engine reads them on incoming pull requests.
+Alethia clients require no action from the contributor and do not block or modify any part of the normal development workflow.
 
-Alethia clients are designed to be passive - they require no action from the developer and do not block or modify any part of the normal development workflow.
+---
 
-# Class Descriptions
+## Class Descriptions
 
-## Config
+### Config
 
-### DetectionConfig.kt — Data Class
+**DetectionConfig.kt  :  Data Class**
+Defines the thresholds and patterns that determine what Alethia considers suspicious. Maintainers will eventually be able to tune these values per-repo via `.alethia.yml`.
 
-Data class holding all configurable thresholds and rules used by the detection system. Uses constructor parameters with default values so it works out of the box. Passed into rules via constructor injection so rules never hardcode thresholds directly.
+Centralizing these values means rules never need to be changed to adjust sensitivity.
 
+**AlethiaConstants.kt  :  Object**
+A single source of truth for string values used across multiple files; git ref names, hook markers, config keys, and the plugin version. 
 
-## Detection
+Prevents the same string from being duplicated across files and becoming inconsistent over time.
 
-### AlethiaEventHandler.kt — Class
-Single entry point for all detection events. Receives `SessionState` via constructor injection. Responsible for two things: deduplicating events by source priority, and delegates to `RuleEngine` for rule evaluation.
+---
 
-### DetectionRule.kt — Interface
-The contract that all detection rules must implement. Defines a single method `evaluate(event: DetectionEvent): String?` that returns a rationale string if the event should be flagged or null if it should be ignored. Adding a new detection rule means creating a new class that implements this interface and registering it in `RuleEngine`, no other files need to change.
+### Detection
 
-### LargePasteRule.kt — Class
-The first concrete implementation of `DetectionRule`. Evaluates if an insertion exceeds the configured character threshold and whether the file should be ignored. Returns different rationale strings depending on the event source.
+**AlethiaEventHandler.kt  :  Class**
+The central coordinator for all detection activity. Every event from every listener flows through here before any flag is created. 
 
-### RuleEngine.kt — Object
-Singleton that holds a list of all registered `DetectionRule` implementations and evaluates them against incoming events. Returns the rationale from the first rule that fires or null if no rules match. New rules are added by instantiating them in the rules list.
+Having a single entry point means deduplication, rule evaluation, and flag creation logic lives in one place, adding a new listener in the future requires no changes here.
 
-### AlethiaDocumentListener.kt — Class
-A thin adapter, implemented as a class, that is responsible for detecting and changes to open documents within the project. When an event is received, the class sends a structured `DetectionEvent` to `AlethiEventHandler` for further processing and flag evaluation. Implements `DocumentListener`.
+**DetectionRule.kt  :  Interface**
+Defines the contract every detection rule must satisfy. The interface exists so new rules can be added without touching any existing code; implement the interface, register in `RuleEngine`, done. 
 
-### AlethiaPasteListener.kt — Class
-A thin adapter, implemented as a class, that is responsible for detecting and clipboard pasts within the project. When an event is received, the class sends a structured `DetectionEvent` to `AlethiEventHandler` for further processing and flag evaluation. Implements `CopyPastePreprocessor`.
+This keeps detection logic modular and independently testable.
 
+**LargePasteRule.kt  :  Class**
+The first detection rule, flags insertions above a configurable character threshold. 
 
-## Model
+Distinguishes between confirmed clipboard pastes and inferred document changes, reporting each with an appropriate confidence level so Themis can weight them differently.
 
-### DetectionEvent.kt — Data Class
-Data class that wraps all raw information from any listener into a structured object. Listeners build one of these and hand it to `AlethiaEventHandler`, they make no decisions themselves.
+**RuleEngine.kt  :  Object**
+Runs all registered rules against each incoming event and returns the first match. 
 
-### EventSource.kt — Enum Class
-An enum defining the possible sources of a detection event. Each value carries a priority integer so the event handler can determine which source is more specific when deduplication is needed. `CLIPBOARD_PASTE` has higher priority than `DOCUMENT_CHANGE` because a confirmed paste is more specific than an inferred insertion.
+Centralizing rule orchestration here means `AlethiaEventHandler` never needs to know which rules exist or how many there are.
 
-### FlaggedRegion.kt — Data Class
-The core model that represents a single region of code that has been flagged as suspicious. Immutable, all fields are `val`. A data class because it is pure data, auto-generated `equals()` and `hashCode()` are needed for test assertions, and `toString()` is useful for logging and debugging.
+**AlethiaDocumentListener.kt  :  Class**
+Listens for all text changes in open documents. Exists as a thin adapter because IntelliJ requires a specific interface to hook into document events.
 
-### SerializableFlaggedRegion.kt — Class
-An XML-serializable wrapper for `FlaggedRegion` used exclusively inside `AlethiaStateService`. Cannot be a data class because IntelliJ's XML serializer requires mutable fields with no-arg defaults. Contains `companion object` with `from()` factory method to convert from `FlaggedRegion`, and a `toFlaggedRegion()` method to convert back.
+Keeping it thin means all actual decision-making stays in `AlethiaEventHandler` where it belongs.
 
-### RuleResult.kt — Data Class
-A data Class designed to represent an events `rationale` and `eventType` variables. `EventType` was added as a strandardized idnetifier for events. `EventType` allows Themis to check against a list of known eventTypes rather than parsing the rationale description.
+**AlethiaPasteListener.kt  :  Class**
+Intercepts clipboard paste events before the text lands in the editor. 
 
+A paste confirmed by this listener carries higher confidence than an insertion detected by the document listener alone, because there is no ambiguity about where the text came from.
 
-## Services
+---
 
-### LoggingService.kt — Interface
-An interface used to create logger objects from the `java.util.logging.Logging` package. Previously used `Log4j`, however logs were appearing in IntelliJ's `idea.log` making it difficult to identify Alethia specific logs.
+### Events
 
-### LoggingFactory.kt — Class
-This class implements `LoggingService` to create logger objects. On initiliazation, the class uses a `FileHandler` object for formatting the logger and produced logs. This class is registered as an application scoped service. If the `LoggingFactory` fails to be created, the failure is logged in IntelliJ's `idea.log` via `Log4j` loggers.
+**DetectionEvent.kt  :  Data Class**
+A structured container that carries everything needed to evaluate a detection event; file path, repo root, character count, line numbers, elapsed time, and source. 
 
-## Session
+Listeners build one of these and hand it off, keeping their own logic to a minimum.
 
-### SessionState.kt — Interface
-Contract for Alethia session state. Defines the methods and properties any session state implementation must provide, `addFlag`, `getFlags`, `flagCount`, `clearFlags`, and `lastCommitSha`. `AlethiaEventHandler` and any other component that needs session state is coupled only to this interface. This makes the persistence mechanism swappable and allows tests to inject a simple in-memory mock.
+**EventSource.kt  :  Enum Class**
+Each source carries a priority so the event handler can resolve conflicts when multiple listeners fire for the same insertion, a confirmed paste always takes precedence over an inferred document change.
 
-### AlethiaStateService.kt — Class
-Implementation of `SessionState` and the single source of truth for all session persistence. A project-scoped IntelliJ Platform service managed by the IntelliJ container, never instantiated directly, always accessed via `project.service<AlethiaStateService>()`. Project-scoped to prevent state conflicts between multiple open repositories.
+---
 
+### Model
 
-## Startup
+**FlaggedRegion.kt  :  Data Class**
+Represents a single suspicious code insertion that Alethia has decided to record. 
 
-### AlethiaInstaller.kt — Class
-A class that handles all one-time activities that need to be ran on project startup. Currently installs two items: First, the `pre-push hook` used for commit/push detection and responses. Second, it udpates the `.git\config` file to enable note copying when rebase and amend actions occur. Called by `AlethiaStartupActivity.kt`, a class registered with IntelliJ as a `postStartupActivity`. All tasks are designed to be idempotent and check for evidence of previous calls, preventing duplicate logic.
+This is the core unit of data that flows from detection through to the git note, everything Themis needs to evaluate a flagged insertion is here.
 
-### AlethiaStartupActivity.kt — Class
-A class that handles calls as services that must be ran on project startup. Tasks that must be run on startup are divided into seperate classes (currently just `AlethiaInstaller.kt`). If we add more startup tasks in the future that do not belong in the Installer, then we can define a new class and handle tasks from this central controller. The class implements `ProjectActivity` and is registered as a `postStartupActivity` to ensure it is run on porject load.
+**RuleResult.kt  :  Data Class**
+Carries the output of a rule evaluation: a standardized `eventType` identifier and a human-readable rationale. 
 
+The `eventType` exists specifically so Themis can categorize flags programmatically without parsing text, making the Themis implementation simpler and more reliable.
 
-## VCS
+---
 
-### AlethiaCheckinHandlerFactory.kt::AlethiaCheckinHandlerFactory — Class
-A class that handles creating `CheckinHandler` objects for each commit. This class implements `VcsCheckinHandlerFactory` and overrides `createVCSHandler()` which is called whenever a commit is detected. The class is registered as a `VcsCheckinHandlerFactory` which means that it is hooked into IntelliJs commit pipeline, detecting any and all commits.
+### Session
 
-### AlethiaCheckinHandlerFactory.kt::AlethiaCheckinHandler — Class
-A class that gets instantiated on every commit. A seperate `AlethiaCheckinHandler` object is created for each commit operations, calling `checkinSuccessful()` which we override to handle creating git notes, creating a snapshot of the current porject state, and clear all cached `FlaggedRegion` object in the SessionState.
+**AlethiaStateService.kt  :  Class**
+Keeps track of everything Alethia has observed during the current coding session, flagged regions and the SHA of the last processed commit. 
 
+Persisting this state means flags are never lost if the IDE closes unexpectedly before a commit, and the last commit SHA prevents duplicate git notes from being written if the handler fires more than once.
 
-## Build
+---
 
-### plugin.xml - Build config file
-Configuration file read by the IntelliJ Platform at startup. Declares the plugin identity, dependencies, registered services, listeners, and extension points. IntelliJ will not know any of the plugin's components exist without being declared here.
+### Startup
+
+**AlethiaInstaller.kt  :  Object**
+Sets up everything Alethia needs in a repository the first time a developer opens it. The pre-push hook ensures notes reach the remote alongside normal pushes. The git config entries ensure notes survive rebases and amends. 
+
+Without these, rewriting commit history would silently orphan the notes Themis depends on.
+
+**AlethiaStartupActivity.kt  :  Class**
+The entry point IntelliJ calls when a project opens. Its only job is to wait until git repositories are fully mapped, which does not happen immediately on project open, and then hand off to `AlethiaInstaller`. 
+
+Separating the IntelliJ entry point from the installation logic makes the installer independently testable.
+
+---
+
+### VCS
+
+**AlethiaCheckinHandlerFactory.kt  :  Classes**
+Contains two classes. `AlethiaCheckinHandlerFactory` hooks into IntelliJ's commit pipeline so Alethia is notified every time a commit succeeds. `AlethiaCheckinHandler` does the work on each commit, writing the accumulated flags as a git note, saving a snapshot of the session state before clearing it, and recording the commit SHA to prevent duplicate processing. Git notes are the transport mechanism that gets Alethia's data to Themis without requiring any external server.
+
+---
+
+### Build and Config
+
+**plugin.xml**
+Tells IntelliJ what this plugin is and what it registers. Without this file IntelliJ would have no knowledge of any of the plugin's services, listeners, or extension points.
+
+**logging.properties**
+Configures where and how Alethia writes its logs. Keeping configuration out of code means log output location and format can be adjusted without recompiling the plugin. Alethia logs to a dedicated `~/.alethia/alethia.log` file rather than IntelliJ's `idea.log` so that plugin-specific output is easy to find without searching through IDE internals.
