@@ -1,7 +1,8 @@
 package com.alethia.vcs
 
 import com.alethia.config.AlethiaConstants
-import com.alethia.detection.AlethiaEventHandler
+import com.alethia.model.AlethiaDocument
+import com.alethia.model.AlethiaNote
 import com.alethia.model.FlaggedRegion
 import com.alethia.model.FlaggedRegionAdapter
 import com.alethia.session.AlethiaStateService
@@ -135,7 +136,14 @@ class AlethiaCheckinHandler(private val panel: CheckinProjectPanel) : CheckinHan
             val allFlags = existingFlags + newFlags
 
             // Build the JSON block that will be saved in the note
-            val noteContent = buildNoteJson(allFlags)
+            val document = AlethiaDocument(
+                alethia = AlethiaNote(
+                    generatedAt = java.time.Instant.now().toString(),
+                    flagCount = allFlags.size,
+                    flaggedRegions = allFlags
+                )
+            )
+            val noteContent = gson.toJson(document)
 
             // Create a temp file, avoids Windows shell quote handling issues (Occurred in Hackathon)
             val tempFile = File(repoPath, ".git/alethia_temp_note.json")
@@ -199,7 +207,7 @@ class AlethiaCheckinHandler(private val panel: CheckinProjectPanel) : CheckinHan
 
             // Deserialize the retrieved JSON objects
             val root = gson.fromJson(output, com.google.gson.JsonObject::class.java)
-            // Feth the alethia block
+            // Fetch the alethia block
             val alethia = root.getAsJsonObject("alethia") ?: return emptyList()
             // Fetch the flagged regions list from the alethia block
             val regions = alethia.getAsJsonArray("flaggedRegions") ?: return emptyList()
@@ -211,29 +219,5 @@ class AlethiaCheckinHandler(private val panel: CheckinProjectPanel) : CheckinHan
             LOG.warn("AlethiaCheckinHandler: could not parse existing note: ${e.message}")
             emptyList()
         }
-    }
-
-    /**
-     * Builds the JSON block for the git note.
-     * Commit SHA is intentionally excluded, git already knows which
-     * commit the note is attached to, and a stored SHA becomes
-     * incorrect if the commit is later rebased or amended.
-     * GsonBuilder uses a customer serializer to serialize
-     * the individual FlaggerRegion objects.
-     *
-     * @param flags     The list of flagged regions to serialize
-     * @return JSON     string to be written as the git note content
-     */
-    private fun buildNoteJson(flags: List<FlaggedRegion>): String {
-        // Json object format
-        val note = mapOf(
-            "alethia"               to mapOf(
-                "version"           to AlethiaConstants.PLUGIN_VERSION,
-                "generatedAt"       to java.time.Instant.now().toString(),
-                "flagCount"         to flags.size,
-                "flaggedRegions"    to flags
-            )
-        )
-        return gson.toJson(note)
     }
 }

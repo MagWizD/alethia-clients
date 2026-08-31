@@ -6,11 +6,11 @@ package com.alethia.model
  * on commit, then cleared. Schema matches the VSCode extension exactly.
  */
 data class FlaggedRegion(
-    val eventType: String = "",      // Standardized EventID
-    val file: String = "",           // Absolute path the file containing the flagged region
-    val startLine: Int = 0,         // Line number the flagged region begins (1-indexed)
-    val endLine: Int = 0,           // Line number the flagged region ends (1-indexed)
-    val charCount: Int = 0,         // Total number of characters in the flagged region
-    val rationale: String = "",      // Human-readable reason for the region being flagged
-    val timeStamp: String = "",      // ISO timestamp of when the flag was created
+    var eventType: String = "",      // Standardized EventID
+    var file: String = "",           // Absolute path the file containing the flagged region
+    var startLine: Int = 0,         // Line number the flagged region begins (1-indexed)
+    var endLine: Int = 0,           // Line number the flagged region ends (1-indexed)
+    var charCount: Int = 0,         // Total number of characters in the flagged region
+    var rationale: String = "",      // Human-readable reason for the region being flagged
+    var timeStamp: String = "",      // ISO timestamp of when the flag was created
 )
