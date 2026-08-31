@@ -1,15 +1,19 @@
 package com.alethia.detection.rules
 
 import com.alethia.config.DetectionConfig
-import com.alethia.detection.events.DetectionEvent
-import com.alethia.detection.events.EventSource
+import com.alethia.model.DetectionEvent
+import com.alethia.model.EventSource
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 
 /**
- * Test class evaulating results from LargePasteRule.kt
- * rule file, checking both "happy path" and edge cases.
+ * Units tests for LargePasteRule - the first concrete DetectionRule implementation.
+ * Does not require the IntelliJ Platform since rule evaluation is pure logic
+ * with no platform dependencies.
+ *
+ * Tests cover threshold boundaries, ignore patterns, event source differentiation,
+ * and custom config values.
  */
 class LargePasteRuleTest {
 
@@ -22,8 +26,12 @@ class LargePasteRuleTest {
         rule = LargePasteRule(config)
     }
 
-    // Below threshold
+    // ---------------------------  THRESHOLD TESTS  ----------------------------
 
+    @Test
+    fun test() {
+        assertEquals(1,1)
+    }
     @Test
     fun `returns null for small clipboard paste`() {
         val event = buildEvent(charCount = 50, source = EventSource.CLIPBOARD_PASTE)
@@ -35,8 +43,6 @@ class LargePasteRuleTest {
         val event = buildEvent(charCount = 50, source = EventSource.DOCUMENT_CHANGE)
         assertNull(rule.evaluate(event))
     }
-
-    // Above threshold
 
     @Test
     fun `flags large clipboard paste`() {
@@ -54,8 +60,6 @@ class LargePasteRuleTest {
         assertTrue(result?.eventType.equals("LARGE_INSERTION"))
     }
 
-    // Exactly at threshold
-
     @Test
     fun `does not flag insertion exactly at threshold`() {
         val event = buildEvent(charCount = 200, source = EventSource.CLIPBOARD_PASTE)
@@ -68,7 +72,7 @@ class LargePasteRuleTest {
         assertNotNull(rule.evaluate(event))
     }
 
-    // Ignore patterns
+    // ---------------------------  IGNORE PATTERN TESTS  ----------------------------
 
     @Test
     fun `ignores git internal files`() {
@@ -104,7 +108,7 @@ class LargePasteRuleTest {
         assertNotNull(customRule.evaluate(aboveCustom))
     }
 
-    // Helper
+    // ---------------------------  HELPERS  ----------------------------
 
     private fun buildEvent(
         charCount: Int,

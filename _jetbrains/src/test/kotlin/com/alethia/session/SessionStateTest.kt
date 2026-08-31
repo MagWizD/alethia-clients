@@ -1,61 +1,65 @@
 package com.alethia.session
 
 import com.alethia.model.FlaggedRegion
+import com.intellij.openapi.components.service
+import com.intellij.testFramework.fixtures.BasePlatformTestCase
 
-import org.junit.Assert.*
-import org.junit.Before
-import org.junit.Test
 
 /**
+ * Integration tests for AlethiaStateService using BasePlatformTestCase.
+ * Requires the IntelliJ Platform to run since AlethiaStateService is a
+ * project-scoped service managed by the IntelliJ container, it cannot
+ * be instantiated without a running platform.
  *
+ * Tests cover flag addition, retrieval, clearing, snapshot isolation,
+ * and lastCommitSha persistence.
  */
-class SessionStateTest {
+class SessionStateTest : BasePlatformTestCase() {
 
-    // Implement a simple SessionState for testing
-    private val state = object : SessionState{
-        val flagList = mutableListOf<FlaggedRegion>()
-        override fun addFlag(flag: FlaggedRegion) {flagList.add(flag)}
-        override fun getFlags() = flagList.toList()
-        override fun flagCount() = flagList.size
-        override fun clearFlags() {flagList.clear()}
-        override var lastCommitSha: String? = null
+    // Create test variables
+    private lateinit var stateService: AlethiaStateService
+
+    // Executes right before each test
+    override fun setUp() {
+        super.setUp();
+        stateService = project.service<AlethiaStateService>()
+        stateService.clearFlags()
+        stateService.lastCommitSha = null
     }
 
-    @Before
-    fun setup() {
-        state.clearFlags()
+    // Executes right after each test
+    override fun tearDown() {
+        stateService.clearFlags()
+        stateService.lastCommitSha = null
+        super.tearDown()
     }
 
     // ---------------------------  ADDITION / RETRIEVAL TESTS  ----------------------------
 
-    @Test
-    fun `starts with no flags`() {
-        assertEquals(0, state.flagCount())
+    fun `test starts with no flags`() {
+        assertEquals(0, stateService.flagCount())
     }
 
-    @Test
-    fun `adds a flag correctly`() {
-        state.addFlag(buildFlag("/project/src/testFileA.kt"))
-        assertEquals(1, state.flagCount())
+    fun `test adds a flag correctly`() {
+        stateService.addFlag(buildFlag("/project/src/testFileA.kt"))
+        assertEquals(1, stateService.flagCount())
     }
 
-    @Test
-    fun `adds multiple flags correctly`() {
-        state.addFlag(buildFlag("/project/src/testFileA.kt"))
-        state.addFlag(buildFlag("/project/src/testFileB.kt"))
-        state.addFlag(buildFlag("/project/src/testFileC.kt"))
-        assertEquals(3, state.flagCount())
+    fun `test adds multiple flags correctly`() {
+        stateService.addFlag(buildFlag("/project/src/testFileA.kt"))
+        stateService.addFlag(buildFlag("/project/src/testFileB.kt"))
+        stateService.addFlag(buildFlag("/project/src/testFileC.kt"))
+        assertEquals(3, stateService.flagCount())
     }
 
-    @Test
-    fun `getFlags returns all added flags`() {
+    fun `test getFlags returns all added flags`() {
         val flag1 = buildFlag("/project/src/testFileA.kt")
         val flag2 = buildFlag("/project/src/testFileB.kt")
 
-        state.addFlag(flag1)
-        state.addFlag(flag2)
+        stateService.addFlag(flag1)
+        stateService.addFlag(flag2)
 
-        val flags = state.getFlags()
+        val flags = stateService.getFlags()
 
         assertEquals(2, flags.size)
         assertTrue(flags.contains(flag1))
@@ -64,65 +68,59 @@ class SessionStateTest {
 
     // ---------------------------  CLEAR TESTS  ----------------------------
 
-    @Test
-    fun `clearFlags removes all queued flags`() {
-        state.addFlag(buildFlag("/project/src/testFileA.kt"))
-        state.addFlag(buildFlag("/project/src/testFileB.kt"))
-        state.addFlag(buildFlag("/project/src/testFileC.kt"))
-        state.addFlag(buildFlag("/project/src/testFileD.kt"))
+    fun `test clearFlags removes all queued flags`() {
+        stateService.addFlag(buildFlag("/project/src/testFileA.kt"))
+        stateService.addFlag(buildFlag("/project/src/testFileB.kt"))
+        stateService.addFlag(buildFlag("/project/src/testFileC.kt"))
+        stateService.addFlag(buildFlag("/project/src/testFileD.kt"))
 
-        state.clearFlags()
+        stateService.clearFlags()
 
-        assertEquals(0, state.flagCount())
+        assertEquals(0, stateService.flagCount())
     }
 
-    @Test
-    fun `able to add flags after clearing`() {
-        state.addFlag(buildFlag("/project/src/testFileA.kt"))
-        state.addFlag(buildFlag("/project/src/testFileB.kt"))
+    fun `test able to add flags after clearing`() {
+        stateService.addFlag(buildFlag("/project/src/testFileA.kt"))
+        stateService.addFlag(buildFlag("/project/src/testFileB.kt"))
 
-        state.clearFlags()
+        stateService.clearFlags()
 
-        state.addFlag(buildFlag("/project/src/testFileA.kt"))
-        state.addFlag(buildFlag("/project/src/testFileB.kt"))
-        state.addFlag(buildFlag("/project/src/testFileC.kt"))
+        stateService.addFlag(buildFlag("/project/src/testFileA.kt"))
+        stateService.addFlag(buildFlag("/project/src/testFileB.kt"))
+        stateService.addFlag(buildFlag("/project/src/testFileC.kt"))
 
-        assertEquals(3, state.flagCount())
+        assertEquals(3, stateService.flagCount())
 
     }
 
     // ---------------------------  SNAPSHOT TESTS  ----------------------------
 
-    @Test
-    fun `getFlags returns a values snapshot not a reference`() {
-        state.addFlag(buildFlag("/project/src/testFileA.kt"))
+    fun `test getFlags returns a values snapshot not a reference`() {
+        stateService.addFlag(buildFlag("/project/src/testFileA.kt"))
 
-        val snapshot = state.getFlags()
+        val snapshot = stateService.getFlags()
 
-        state.addFlag(buildFlag("/project/src/testFileB.kt"))
+        stateService.addFlag(buildFlag("/project/src/testFileB.kt"))
 
         assertEquals(1, snapshot.size)
-        assertEquals(2, state.flagCount())
+        assertEquals(2, stateService.flagCount())
     }
 
     // ---------------------------  LASTCOMMITSHA METHODS  ----------------------------
 
-    @Test
-    fun `lastCommitSha is null by default`() {
-        assertNull(state.lastCommitSha)
+    fun `test lastCommitSha is null by default`() {
+        assertNull(stateService.lastCommitSha)
     }
 
-    @Test
-    fun `lastCommitSha can be set and retrieved`() {
-        state.lastCommitSha = "abc123"
-        assertEquals("abc123", state.lastCommitSha)
+    fun `test lastCommitSha can be set and retrieved`() {
+        stateService.lastCommitSha = "abc123"
+        assertEquals("abc123", stateService.lastCommitSha)
     }
 
-    @Test
-    fun `lastCommitSha can be updated`() {
-        state.lastCommitSha = "abc123"
-        state.lastCommitSha = "def456"
-        assertEquals("def456", state.lastCommitSha)
+    fun `test lastCommitSha can be updated`() {
+        stateService.lastCommitSha = "abc123"
+        stateService.lastCommitSha = "def456"
+        assertEquals("def456", stateService.lastCommitSha)
     }
 
     // ---------------------------  HELPER METHODS  ----------------------------
