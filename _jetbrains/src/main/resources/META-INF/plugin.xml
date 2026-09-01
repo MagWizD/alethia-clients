@@ -1,16 +1,67 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
+    <!--  IDENTITY  -->
+    <!--  Plugin ID - CANNOT CHANGE AFTER MARKETPLACE PUBLISHING!  -->
     <id>com.alethia.plugin</id>
     <name>Alethia</name>
     <vendor>Alethia</vendor>
     <description><![CDATA[
-        <p><b>Alethia</b> is a passive AI code detection engine for JetBrains IDEs.</p>
-        <p>It monitors for suspicious code insertions, serializes flagged metadata 
-        as git notes on each commit, and pushes those notes to remote so the Themis 
-        reporting engine can surface AI attribution data on incoming pull requests.</p>
+        <p><b>Alethia</b> is a passive code contribution analysis engine.</p>
+        <p>It monitors coding sessions for suspicious insertion patterns, serializes
+        behavioral metadata as git notes on each push, and forwards that data to the
+        Themis reporting engine so open-source maintainers can evaluate the quality
+        and intent of incoming pull requests.</p>
     ]]></description>
 
+
+    <!--  DEPENDENCIES  -->
+    <!--  Base IntelliJ Platform, targets all JetBrains IDEs  -->
     <depends>com.intellij.modules.platform</depends>
+    <!--  Bundled git plugin, required for repo detection, push/rebase listeners...  -->
     <depends>Git4Idea</depends>
+
+
+    <!--  SERVICES  -->
+    <!--  Managed singletons, never instantiated, use project.service<>() to retrieve  -->
+    <extensions defaultExtensionNs="com.intellij">
+        <!--  Project-Scoped | Handles all Events from received Alethia listeners  -->
+        <projectService serviceImplementation="com.alethia.detection.AlethiaEventHandler"/>
+        <!--  Project-Scoped | Handles flaggedRegions persistence and lastCommitSha  -->
+        <projectService serviceImplementation="com.alethia.session.AlethiaStateService"/>
+        <!--  Application-Scoped | Wraps IntelliJ Logger, can be injected/mocked  -->
+        <applicationService serviceImplementation="com.alethia.services.LoggingFactory"/>
+        <!--  Run on project load | Installs pre-push hook/git-config via AlethiaInstaller  -->
+        <postStartupActivity implementation="com.alethia.startup.AlethiaStartupActivity"/>
+        <!--  Intercepts paste events before text lands in editor  -->
+        <copyPastePreProcessor implementation="com.alethia.detection.listeners.AlethiaPasteListener"/>
+        <!--  Hooks into IntelliJ commit pipeline, fires after every successful commit  -->
+        <vcsCheckinHandlerFactory implementation="com.alethia.vcs.AlethiaCheckinHandlerFactory"/>
+    </extensions>
+
+    <!--  LISTENERS  -->
+    <!--  Listeners get registered at project level  -->
+    <projectListeners>
+        <!--  Fires after text changes in any open document  -->
+        <listener
+            class="com.alethia.detection.listeners.AlethiaDocumentListener"
+            topic="com.intellij.openapi.editor.event.DocumentListener"/>
+    </projectListeners>
+    <applicationListeners>
+        <!--  Fires after a git push is detected within the project  -->
+        <listener
+            class="com.alethia.detection.listeners.AlethiaGitPushListener"
+            topic="git4idea.push.GitPushListener"/>
+    </applicationListeners>
+
+
+    <actions>
+        <action
+                id="com.alethia.AlethiaTestAction"
+                class="com.alethia.AlethiaTestAction"
+                text="Alethia Test"
+                description="Test if Alethia plugin is loaded">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+    </actions>
 
 </idea-plugin>

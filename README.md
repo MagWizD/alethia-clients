@@ -14,7 +14,7 @@ Alethia-clients/
 └── _jetbrains/       # JetBrains plugin (Kotlin / Gradle)
 ```
 
-Each client is an independent project with its own build system, dependencies, and deployment target. They share the same detection logic conceptually but are implemented separately for each platform. THis repository will split once both extensions are stabe enough to version independently, for a small team a single repo enables us to more easily managed the currently evolving schema
+Each client is an independent project with its own build system, dependencies, and deployment target. They share the same detection logic conceptually but are implemented separately for each platform. This repository will split once both extensions are stable enough to version independently, for a small team a single repo enables us to more easily manage the currently evolving schema
 
 ---
 
@@ -67,26 +67,30 @@ Both clients collect the same categories of metadata and write them as a structu
 
 ```json
 {
-  "AlethiaVersion": "0.1.0",
-  "commit": "<sha>",
-  "generatedAt": "<iso timestamp>",
-  "extensionActive": true,
-  "flagCount": 2,
-  "flaggedRegions": [
-    {
-      "file": "src/auth.js",
-      "startLine": 42,
-      "endLine": 67,
-      "charCount": 1204,
-      "reasonFlagged": "Large instant insertion - 1204 chars in 80ms",
-      "timeStamp": "<iso timestamp>"
+    "alethia": {
+        "version": "0.1.0",
+        "generatedAt": "2026-08-03T00:00:00Z",
+        "flagCount": 2,              <- //INT
+        "flaggedRegions": [          <- //ARRAY
+            {
+                "file": "src/auth.kt",
+                "startLine": 10,     <- //INT
+                "endLine": 20,       <- //INT
+                "charCount": 500,    <- //LONG 
+                "rationale": "Large clipboard paste - 500 chars.",
+                "timeStamp": "2026-08-03T00:00:00Z"
+            },
+            {...}
+        ]
     }
-  ],
-  "chatHistory": []
 }
 ```
 
-A commit with `extensionActive: true` and `flagCount: 0` means the extension was running and found nothing suspicious. A commit with no note at all means the extension was not active - Themis treats this as a signal in itself.
+This simple structure has multiple benefits:
+- A commit with no `alethia` object means that `Alethia` was not active -> `Themis` can flag this
+- A commit with an `alethia` object but no flags means `Alethia` was active but found nothing suspicious
+- A commit with a non-zero `flagCount` and populated `flaggedRegions` means `Alethia` created flags
+  - Additional note: `Themis` should flag if `array size` and `flagCount` do not match -> could indicate a transfer error or tampering
 
 ---
  
@@ -120,8 +124,9 @@ A commit with `extensionActive: true` and `flagCount: 0` means the extension was
 - [X] Configure plugin metadata - `plugin.xml`, `gradle.properties`
 - [X] Define package structure under `com.alethia`
 - [X] Define `FlaggedRegion` data class matching VSCode schema
-- [ ] Implement passive text change detection
-- [ ] Implement paste interception
+- [X] Implement passive text change detection
+- [X] Implement debounce to prevent duplicate flags from large change events
+- [X] Implement paste interception
 - [ ] Implement session persistence - flags survive IDE restarts
 - [ ] Implement file signing for tamper detection on saved metadata
 - [ ] Implement commit detection
@@ -135,6 +140,80 @@ A commit with `extensionActive: true` and `flagCount: 0` means the extension was
 
 ---
 
+## JetBrains Plugin Structure
+
+### File Structure
+
+```
+_jetbrains/src/main
+├── resources/META-INF
+│   └── plugin.xml
+└── kotlin/com/alethia
+    ├── config/
+    │   └── DetectionConfig.kt
+    ├── detection/
+    │   ├── AlethiaEventHandler.kt
+    │   ├── events/
+    │   │   ├── DetectionEvent.kt
+    │   │   └── EventSource.kt
+    │   ├── listeners/
+    │   │   ├── AlethiaDocumentListener.kt
+    │   │   └── AlethiaPasteProcessor.kt
+    │   └── rules/
+    │       ├── DetectionRule.kt
+    │       ├── LargePasteRule.kt
+    │       └── RuleEngine.kt
+    ├── model/
+    │   ├── FlaggedRegion.kt
+    │   └── SerializableFlaggedRegion.kt
+    └── session/
+        ├── SessionState.kt
+        └── AlethiaStateService.kt
+
+```
+
+---
+
+### Project Organization
+
+**plugin.xml**
+Configuration file read by the IntelliJ Platform at startup. Declares the plugin identity, dependencies, registered services, listeners, and extension points. IntelliJ will not know any of the plugin's components exist without being declared here.
+
+**DetectionConfig.kt : Data Class**
+Data class holding all configurable thresholds and rules used by the detection system. Uses constructor parameters with default values so it works out of the box. Passed into rules via constructor injection so rules never hardcode thresholds directly.
+
+**AlethiaEventHandler.kt : Class**
+Single entry point for all detection events. Receives `SessionState` via constructor injection. Responsible for two things: deduplicating events by source priority, and delegates to `RuleEngine` for rule evaluation.
+
+**DetectionEvent.kt : Data Class**
+Data class that wraps all raw information from any listener into a structured object. Listeners build one of these and hand it to `AlethiaEventHandler`, they make no decisions themselves.
+
+**EventSource.kt : Enum Class**
+An enum defining the possible sources of a detection event. Each value carries a priority integer so the event handler can determine which source is more specific when deduplication is needed. `CLIPBOARD_PASTE` has higher priority than `DOCUMENT_CHANGE` because a confirmed paste is more specific than an inferred insertion.
+
+**DetectionRule.kt : Interface**
+The contract that all detection rules must implement. Defines a single method `evaluate(event: DetectionEvent): String?` that returns a rationale string if the event should be flagged or null if it should be ignored. Adding a new detection rule means creating a new class that implements this interface and registering it in `RuleEngine`, no other files need to change.
+
+**LargePasteRule.kt : Class**
+The first concrete implementation of `DetectionRule`. Evaluates if an insertion exceeds the configured character threshold and whether the file should be ignored. Returns different rationale strings depending on the event source.
+
+**RuleEngine.kt : Object**
+Singleton that holds a list of all registered `DetectionRule` implementations and evaluates them against incoming events. Returns the rationale from the first rule that fires or null if no rules match. New rules are added by instantiating them in the rules list.
+
+**FlaggedRegion.kt : Data Class**
+The core model that represents a single region of code that has been flagged as suspicious. Immutable, all fields are `val`. A data class because it is pure data, auto-generated `equals()` and `hashCode()` are needed for test assertions, and `toString()` is useful for logging and debugging.
+
+**SerializableFlaggedRegion.kt : Class**
+An XML-serializable wrapper for `FlaggedRegion` used exclusively inside `AlethiaStateService`. Cannot be a data class because IntelliJ's XML serializer requires mutable fields with no-arg defaults. Contains `companion object` with `from()` factory method to convert from `FlaggedRegion`, and a `toFlaggedRegion()` method to convert back.
+
+**SessionState.kt : Interface**
+Contract for Alethia session state. Defines the methods and properties any session state implementation must provide, `addFlag`, `getFlags`, `flagCount`, `clearFlags`, and `lastCommitSha`. `AlethiaEventHandler` and any other component that needs session state is coupled only to this interface. This makes the persistence mechanism swappable and allows tests to inject a simple in-memory mock.
+
+**AlethiaStateService.kt : Class**
+Implementation of `SessionState` and the single source of truth for all session persistence. A project-scoped IntelliJ Platform service managed by the IntelliJ container, never instantiated directly, always accessed via `project.service<AlethiaStateService>()`. Project-scoped to prevent state conflicts between multiple open repositories.
+
+---
+
 ## Contributing
 
 Setup instructions coming soon...working out the process
@@ -143,7 +222,7 @@ Setup instructions coming soon...working out the process
 
 ## Setup
 
-Coming later this week!
+Coming later!
 
 ---
 

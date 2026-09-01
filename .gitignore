@@ -15,7 +15,7 @@ _jetbrains/.DS_store
 _jetbrains/.intellijPlatform
 _jetbrains/.kotlin
 _jetbrains/.run
-_jetbrains/gradle/wrapper/gradle-wrapper.jar
+_jetbrains/bin/
 
 # ── Alethia Runtime Files ────────────────────────────────────
 # These are generated at runtime on the developer's machine
