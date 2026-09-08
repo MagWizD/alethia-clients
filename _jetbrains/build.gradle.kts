@@ -47,6 +47,13 @@ tasks.named<Test>("test") {
         isIncludeNoLocationClasses = true
         excludes = listOf("jdk.internal.*")
     }
+
+    testLogging {
+        showStandardStreams = false
+        showExceptions = false
+        showCauses = false
+        showStackTraces = false
+    }
 }
 
 // Configure the JaCoCo test report
