@@ -39,12 +39,16 @@ class AlethiaStartupActivity: ProjectActivity {
         // Load logging configuration
         // Searches the module (com.alethia) for a resourse with name "logging.properties",
         // the provides the found resource, if not null (hence the '?'), to the LogManager
-        // which sets the log levels, format, log output directory, etc.
-        val configStream = AlethiaStartupActivity::class.java
-            .getResourceAsStream("/logging.properties")
-        configStream?.let {
-            java.util.logging.LogManager.getLogManager().readConfiguration(it)
-            it.close()
+        // which sets the log levels, format, log output directory, etc
+        try {
+            val configStream = AlethiaStartupActivity::class.java
+                .getResourceAsStream("/logging.properties")
+            if (configStream != null) {
+                java.util.logging.LogManager.getLogManager().readConfiguration(configStream)
+                configStream.close()
+            }
+        } catch (e: Exception) {
+            System.err.println("Failed to load logging.properties: ${e.message}")
         }
 
         LOG.info("AlethiaStartupActivity: project opened - attempt to install")

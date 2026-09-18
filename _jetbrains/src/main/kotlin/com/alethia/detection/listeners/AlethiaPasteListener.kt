@@ -1,8 +1,8 @@
 package com.alethia.detection.listeners
 
 import com.alethia.detection.AlethiaEventHandler
-import com.alethia.detection.events.DetectionEvent
-import com.alethia.detection.events.EventSource
+import com.alethia.model.DetectionEvent
+import com.alethia.model.EventSource
 import com.alethia.utils.getRepoRoot
 import com.intellij.codeInsight.editorActions.CopyPastePreProcessor
 import com.intellij.openapi.components.service
@@ -10,7 +10,7 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.RawText
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiFile
-import java.util.logging.Logger
+import org.slf4j.LoggerFactory
 
 /**
  * Thin adapter that intercepts paste events and forwards them
@@ -19,8 +19,7 @@ import java.util.logging.Logger
  */
 class AlethiaPasteListener : CopyPastePreProcessor {
 
-    private val LOG = Logger.getLogger(AlethiaPasteListener::class.java.name)
-
+    private val LOG = LoggerFactory.getLogger(AlethiaPasteListener::class.java)
 
     /**
      * Intercepts text before it is copied to the clipboard.
@@ -59,35 +58,42 @@ class AlethiaPasteListener : CopyPastePreProcessor {
         text: String,
         rawText: RawText?
     ): String {
-
         LOG.info("alethia paste listener fired.")
 
         // Get file path — bail out if unavailable, returning text unmodified
         val filePath = file.virtualFile?.path ?: return text
 
-        // Get repo root — bail out if file is not inside a git repo
-        val repoRoot = getRepoRoot(project, filePath) ?: return text
-
+        // Capture caret position now on the EDT before paste lands.
         val document = editor.document
-        val caretOffset = editor.caretModel.offset
-        val startLine = document.getLineNumber(caretOffset) + 1
+        val startLine = document.getLineNumber(editor.caretModel.offset) + 1
         val lineCount = text.count { it == '\n' }
+        val endLine = startLine + lineCount
 
-        // Retrieve AlethiaEventHandler service
-        val handler = project.service<AlethiaEventHandler>()
-
-        handler.submit(
-            DetectionEvent(
-                filePath = filePath,
-                repoRoot = repoRoot,
-                charCount = text.length,
-                startLine = startLine,
-                endLine = startLine + lineCount,
-                elapsedMs = 0,
-                source = EventSource.CLIPBOARD_PASTE
-            )
-        )
-
+        // Move repo lookup off the EDT.
+        // getRepoRoot() calls GitRepositoryManager.getRepositoryForFile() which
+        // is a synchronous VCS operation. IntelliJ does not allow synchronous
+        // VCS lookups on the EDT because they can block the UI thread.
+        com.intellij.openapi.application.ApplicationManager.getApplication()
+            .executeOnPooledThread {
+                com.intellij.openapi.application.ApplicationManager.getApplication()
+                    .runReadAction {
+                        // Retrieve the handler and the repo
+                        val repoRoot = getRepoRoot(project, filePath) ?: return@runReadAction
+                        val handler = project.service<AlethiaEventHandler>()
+                        // Submit the DetectionEvent to AlethiaEventHandler
+                        handler.submit(
+                            DetectionEvent(
+                                filePath = filePath,
+                                repoRoot = repoRoot,
+                                charCount = text.length,
+                                startLine = startLine,
+                                endLine = endLine,
+                                elapsedMs = 0,
+                                source = EventSource.CLIPBOARD_PASTE
+                            )
+                        )
+                    }
+            }
         return text
     }
 }

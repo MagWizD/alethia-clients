@@ -19,6 +19,11 @@ plugins {
 dependencies {
     // JUnit 4: Test framework used for all Alethia Unit Tests
     testImplementation("junit:junit:4.13.2")
+
+    // Mockito
+    testImplementation("org.mockito:mockito-core:5.3.1")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.3.1")
+
     // JSON library for object JSON creation and parsing
     implementation("com.google.code.gson:gson:2.10.1")
 
@@ -46,6 +51,13 @@ tasks.named<Test>("test") {
     extensions.configure<JacocoTaskExtension> {
         isIncludeNoLocationClasses = true
         excludes = listOf("jdk.internal.*")
+    }
+
+    testLogging {
+        showStandardStreams = false
+        showExceptions = false
+        showCauses = false
+        showStackTraces = false
     }
 }
 

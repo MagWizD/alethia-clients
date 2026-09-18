@@ -143,4 +143,21 @@ object AlethiaInstaller {
             }
         }
     }
+
+    fun installGitIgnore(repoPath: String, fileToIgnore: String) {
+        val gitIgnoreFile = File("$repoPath/.gitignore")
+
+        if (gitIgnoreFile.exists()) {
+            gitIgnoreFile.appendText("$fileToIgnore\n")
+            LOG.info("Added $fileToIgnore to .gitignore")
+        } else {
+            LOG.warn(".gitignore file not found -> skipping append operation")
+        }
+    }
+
+    fun installTest(repoPath: String) {
+        installGitHook(repoPath)
+        installGitConfig(repoPath)
+        installGitIgnore(repoPath, AlethiaConstants.STATE_FILE_PATH)
+    }
 }

@@ -72,12 +72,6 @@ class AlethiaCheckinHandler(private val panel: CheckinProjectPanel) : CheckinHan
                 return@forEach
             }
 
-            // Skip writing step if nothing to write
-            if (sessionState.flagCount() == 0) {
-                LOG.info("AlethiaCheckinHandler: no flags queued for commit ${sha.take(7)} -> skipping")
-                return@forEach
-            }
-
             // Write the note
             writeGitNote(repoPath, sha, sessionState)
         }
@@ -126,7 +120,7 @@ class AlethiaCheckinHandler(private val panel: CheckinProjectPanel) : CheckinHan
      * @param sha           The commit SHA to attach the note to
      * @param sessionState  The current session state containing queued flags
      */
-    private fun writeGitNote(repoPath: String, sha: String, sessionState: AlethiaStateService) {
+    fun writeGitNote(repoPath: String, sha: String, sessionState: AlethiaStateService) {
         try {
             // Retrieve all queued flags
             val newFlags = sessionState.getFlags()
