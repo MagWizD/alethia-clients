@@ -1,9 +1,7 @@
 package com.alethia.session
 
 import com.alethia.model.FlaggedRegion
-import com.intellij.openapi.components.service
-import com.intellij.testFramework.fixtures.BasePlatformTestCase
-
+import com.alethia.test.AlethiaBasePlatformTestCase
 
 /**
  * Integration tests for AlethiaStateService using BasePlatformTestCase.
@@ -14,25 +12,7 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
  * Tests cover flag addition, retrieval, clearing, snapshot isolation,
  * and lastCommitSha persistence.
  */
-class SessionStateTest : BasePlatformTestCase() {
-
-    // Create test variables
-    private lateinit var stateService: AlethiaStateService
-
-    // Executes right before each test
-    override fun setUp() {
-        super.setUp();
-        stateService = project.service<AlethiaStateService>()
-        stateService.clearFlags()
-        stateService.lastCommitSha = null
-    }
-
-    // Executes right after each test
-    override fun tearDown() {
-        stateService.clearFlags()
-        stateService.lastCommitSha = null
-        super.tearDown()
-    }
+class SessionStateTest : AlethiaBasePlatformTestCase() {
 
     // ---------------------------  ADDITION / RETRIEVAL TESTS  ----------------------------
 
@@ -66,6 +46,7 @@ class SessionStateTest : BasePlatformTestCase() {
         assertTrue(flags.contains(flag2))
     }
 
+
     // ---------------------------  CLEAR TESTS  ----------------------------
 
     fun `test clearFlags removes all queued flags`() {
@@ -90,23 +71,21 @@ class SessionStateTest : BasePlatformTestCase() {
         stateService.addFlag(buildFlag("/project/src/testFileC.kt"))
 
         assertEquals(3, stateService.flagCount())
-
     }
 
     // ---------------------------  SNAPSHOT TESTS  ----------------------------
 
     fun `test getFlags returns a values snapshot not a reference`() {
         stateService.addFlag(buildFlag("/project/src/testFileA.kt"))
-
         val snapshot = stateService.getFlags()
-
         stateService.addFlag(buildFlag("/project/src/testFileB.kt"))
 
+        // Snapshot should reflect state at time of capture
         assertEquals(1, snapshot.size)
         assertEquals(2, stateService.flagCount())
     }
 
-    // ---------------------------  LASTCOMMITSHA METHODS  ----------------------------
+    // ---------------------------  LASTCOMMITSHA  ----------------------------
 
     fun `test lastCommitSha is null by default`() {
         assertNull(stateService.lastCommitSha)
@@ -123,15 +102,51 @@ class SessionStateTest : BasePlatformTestCase() {
         assertEquals("def456", stateService.lastCommitSha)
     }
 
-    // ---------------------------  HELPER METHODS  ----------------------------
+    // ---------------------------  STATE LIFECYCLE  ----------------------------
 
-    private fun buildFlag(filePath: String) = FlaggedRegion(
-        eventType = "EVENT_TYPE",
-        file = filePath,
-        startLine = 1,
-        endLine = 10,
-        charCount = 500,
-        rationale = "Large clipboard paste - 500 chars",
-        timeStamp = "2026-01-01T00:00:00Z"
-    )
+    fun `test getState returns current state`() {
+        stateService.addFlag(buildFlag("/project/src/test.kt"))
+        val state = stateService.state
+        assertEquals(1, state.flaggedRegions.size)
+    }
+
+    fun `test loadState restores state`() {
+        val newState = AlethiaStateService.State()
+        newState.flaggedRegions.add(buildFlag("/project/src/test.kt"))
+        stateService.loadState(newState)
+        assertEquals(1, stateService.flagCount())
+    }
+
+    // ---------------------------  DESERIALIZATION  ----------------------------
+
+    fun `test FlaggedRegionAdapter deserializes correctly`() {
+        // Instantiate a GSON builder with our custom type adapter
+        val gson = com.google.gson.GsonBuilder()
+            .registerTypeAdapter(FlaggedRegion::class.java, com.alethia.model.FlaggedRegionAdapter())
+            .create()
+
+        // Build a test json object.
+        val json = """
+            {
+                "eventType":"LARGE_PASTE",
+                "file":"src/test.kt",
+                "startLine":1,
+                "endLine":10,
+                "charCount":500,
+                "rationale":"test",
+                "timeStamp":"2026-01-01T00:00:00Z"
+            }""".trimIndent()
+
+        // Translate the Json object to a FlaggedRegion
+        val region = gson.fromJson(json, FlaggedRegion::class.java)
+
+        // Verify the deserialization was correct
+        assertEquals("LARGE_PASTE", region.eventType)
+        assertEquals("src/test.kt", region.file)
+        assertEquals(1, region.startLine)
+        assertEquals(10, region.endLine)
+        assertEquals(500, region.charCount)
+        assertEquals("test", region.rationale)
+        assertEquals("2026-01-01T00:00:00Z", region.timeStamp)
+    }
 }

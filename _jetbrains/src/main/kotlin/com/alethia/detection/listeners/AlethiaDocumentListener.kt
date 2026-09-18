@@ -33,9 +33,10 @@ class AlethiaDocumentListener(private val project: Project) : DocumentListener {
      */
     override fun documentChanged(event: DocumentEvent) {
         println("=== ALETHIA DOCUMENT LISTENER FIRED ===")
-        LOG.info("=== ALETHIA DOCUMENT LISTENER FIRED ===")
+
         val now = System.currentTimeMillis()
         val document = event.document
+
 
         val filePath = FileDocumentManager.getInstance()
             .getFile(document)?.path ?: return

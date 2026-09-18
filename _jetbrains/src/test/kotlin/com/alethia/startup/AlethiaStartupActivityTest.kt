@@ -10,20 +10,24 @@ import java.io.File
  * Requires the IntelliJ Platform since the startup activity depends
  * on GitRepositoryManager and project services.
  *
+ * setUp() calls installTest() which bypasses GitRepositoryManager and
+ * runs the installer functions directly against repoPath, this gets used
+ * for tests that verify installation outcomes without requiring VCS mappings.
+ *
  * Tests cover git hook installation, git config setup, and idempotency
  * of repeated installations.
  */
 class AlethiaStartupActivityTest : AlethiaBasePlatformTestCase() {
 
-    // Runs before each
     override fun setUp() {
         super.setUp()
+        // calls installGitHook(), installGitCOnfig(), and installGitIgnore without
+        // repoPath. This means we can bypass having to register the VCS root which consumes
+        // more time and may result ie exceptions being thrown.
         AlethiaInstaller.installTest(repoPath)
     }
 
     // --------------------  HOOK TESTS  ---------------------
-    // Evaluates the presence of the hook file, the alethia-managed
-    // section, and that our managed block is appended only once.
 
     fun `test pre-push hook is installed on project open`() {
         val hookFile = File(repoPath, ".git/hooks/pre-push")
@@ -48,9 +52,29 @@ class AlethiaStartupActivityTest : AlethiaBasePlatformTestCase() {
         assertEquals(1, occurrences)
     }
 
-    // --------------------  GIT CONFIG TESTS  ---------------------
-    // Check if all expected config values are present in the .git/config file
+    fun `test installer skips setup when no git repos found`() {
+        // Remove hook created in setUp
+        File(repoPath, ".git/hooks/pre-push").delete()
 
+        // install() uses GitRepositoryManager, this means empty repos
+        AlethiaInstaller.install(project)
+
+        // Hook should still not exist since installer skipped
+        assertFalse(File(repoPath, ".git/hooks/pre-push").exists())
+    }
+
+    fun `test installer appends to existing pre-push hook`() {
+        // Replace the hook created in setUp with one that has no alethia marker
+        val hookFile = File(repoPath, ".git/hooks/pre-push")
+        hookFile.writeText("#!/bin/sh\n# existing hook content\n")
+
+        AlethiaInstaller.installTest(repoPath)
+
+        assertTrue(hookFile.readText().contains(AlethiaConstants.HOOK_MARKER))
+        assertTrue(hookFile.readText().contains("existing hook content"))
+    }
+
+    // --------------------  GIT CONFIG TESTS  ---------------------
 
     fun `test git config rewriteRef is set`() {
         val config = File(repoPath, ".git/config").readText()
@@ -67,8 +91,14 @@ class AlethiaStartupActivityTest : AlethiaBasePlatformTestCase() {
         assertTrue(config.contains("amend = true"))
     }
 
-    // --------------------  GITIGNORE TESTS  ---------------------
+    fun `test installGitConfig handles invalid repo path gracefully`() {
+        // Pass a non-existent path to trigger ProcessBuilder exception
+        AlethiaInstaller.installTest("/non/existent/path/that/does/not/exist")
+        // Should not throw, installer should catch the exception
+        assertTrue(true)
+    }
 
+    // --------------------  GITIGNORE TESTS  ---------------------
 
     fun `test gitignore entries are added`() {
         val gitignore = File(repoPath, ".gitignore")
@@ -76,5 +106,13 @@ class AlethiaStartupActivityTest : AlethiaBasePlatformTestCase() {
         assertTrue(gitignore.exists())
         // Verify that the alethia state file is included in the .gitignore file
         assertTrue(gitignore.readText().contains(AlethiaConstants.STATE_FILE_PATH))
+    }
+
+    fun `test installGitIgnore skips when gitignore does not exist`() {
+        // Delete the gitignore that setUp creates
+        File(repoPath, ".gitignore").delete()
+        AlethiaInstaller.installTest(repoPath)
+        // gitignore still should not exist
+        assertFalse(File(repoPath, ".gitignore").exists())
     }
 }

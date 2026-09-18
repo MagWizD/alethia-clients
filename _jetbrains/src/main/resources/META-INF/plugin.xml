@@ -28,8 +28,6 @@
         <projectService serviceImplementation="com.alethia.detection.AlethiaEventHandler"/>
         <!--  Project-Scoped | Handles flaggedRegions persistence and lastCommitSha  -->
         <projectService serviceImplementation="com.alethia.session.AlethiaStateService"/>
-        <!--  Application-Scoped | Wraps IntelliJ Logger, can be injected/mocked  -->
-        <applicationService serviceImplementation="com.alethia.services.LoggingFactory"/>
         <!--  Run on project load | Installs pre-push hook/git-config via AlethiaInstaller  -->
         <postStartupActivity implementation="com.alethia.startup.AlethiaStartupActivity"/>
         <!--  Intercepts paste events before text lands in editor  -->

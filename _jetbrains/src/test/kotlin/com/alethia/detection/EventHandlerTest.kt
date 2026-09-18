@@ -1,10 +1,9 @@
 package com.alethia.detection
 
-import com.alethia.model.DetectionEvent
+import com.alethia.utils.*
 import com.alethia.model.EventSource
-import com.alethia.session.AlethiaStateService
+import com.alethia.test.AlethiaBasePlatformTestCase
 import com.intellij.openapi.components.service
-import com.intellij.testFramework.fixtures.BasePlatformTestCase
 
 /**
  * Integration tests for AlethiaEventHandler using BasePlatformTestCase.
@@ -15,26 +14,18 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
  * Tests cover paste detection, document change detection, source priority
  * deduplication, flag rationale content, and path scrubbing.
  */
-class EventHandlerTest : BasePlatformTestCase() {
+class EventHandlerTest : AlethiaBasePlatformTestCase() {
 
-    private lateinit var stateService: AlethiaStateService
     private lateinit var handler: AlethiaEventHandler
 
     // Executes right before each test
     override fun setUp() {
         super.setUp()
-        stateService = project.service<AlethiaStateService>()
         handler = project.service<AlethiaEventHandler>()
-        stateService.clearFlags()
     }
 
-    // Executes right after each test
-    override fun tearDown() {
-        stateService.clearFlags()
-        super.tearDown()
-    }
 
-    // --------------------  PASTE EVENT TESTS  ---------------------
+    //  ------------------------------  PASTE EVENT TESTS  ----------------------------------
     
     fun `test large clipboard paste creates a flag`() {
         handler.submit(buildEvent(charCount = 500, source = EventSource.CLIPBOARD_PASTE))
@@ -47,7 +38,14 @@ class EventHandlerTest : BasePlatformTestCase() {
         assertEquals(0, stateService.flagCount())
     }
 
-    // --------------------  DEDUPLICATION TESTS  ---------------------
+    fun `test DetectionEvent exposes elapsedMs`() {
+        val event = buildEvent(charCount = 500, source = EventSource.CLIPBOARD_PASTE)
+        assertEquals(100L, event.elapsedMs)
+    }
+
+    // -------------------------------  DEDUPLICATION TESTS  -----------------------------
+    // AlethiaEventHandler suppresses DOCUMENT_CHANGE events that fire within PASTE_WINDOW_MS
+    // of a CLIPBOARD_PASTE for the same file.
 
     fun `test document change suppressed when paste just fired for same file`() {
         val filePath = "project/source/main.kt"
@@ -66,7 +64,7 @@ class EventHandlerTest : BasePlatformTestCase() {
             filePath = filePath
         ))
 
-        // Verify that only flag was created (document change event was suppressed)
+        // Only one flag (document change event was suppressed)
         assertEquals(1, stateService.flagCount())
     }
 
@@ -86,9 +84,11 @@ class EventHandlerTest : BasePlatformTestCase() {
             filePath = "/project/src/TestFileB.kt"
         ))
 
-        // Verify that 2 flags were created (no suppression occurred)
+        // Two flags (no suppression occurred)
         assertEquals(2, stateService.flagCount())
     }
+
+    // -------------------------------  RATIONALE / SOURCE TESTS  -----------------------------
 
     fun `test flag rationale matches clipboard paste`() {
         handler.submit(buildEvent(charCount = 500, source = EventSource.CLIPBOARD_PASTE))
@@ -105,33 +105,21 @@ class EventHandlerTest : BasePlatformTestCase() {
         assertTrue(flag.rationale.contains("source unknown"))
     }
 
-    // --------------------  PATH SCRUBBING TESTS  ---------------------
-
-    fun `test file path is scrubbed to repo relative path`() {
-        handler.submit(buildEvent(
-            charCount = 500,
-            source = EventSource.CLIPBOARD_PASTE,
-            filePath = "/project/src/TestFile.kt",
-            repoRoot = "/project"
-        ))
-        val flag = stateService.getFlags().first()
-        assertEquals("src/TestFile.kt", flag.file)
+    fun `test EventSource clipboard paste has higher priority than document change`() {
+        assertTrue(EventSource.CLIPBOARD_PASTE.priority > EventSource.DOCUMENT_CHANGE.priority)
     }
 
-    // -----------------------  HELPERS  -------------------------
+    // --------------------  PATH SCRUBBING TESTS  ---------------------
 
-    private fun buildEvent(
-        charCount: Int,
-        source: EventSource,
-        filePath: String = "/project/src/Main.kt",
-        repoRoot: String = "/project"
-    ) = DetectionEvent(
-        filePath = filePath,
-        repoRoot = repoRoot,
-        charCount = charCount,
-        startLine = 1,
-        endLine = 1,
-        elapsedMs = 100,
-        source = source
-    )
+    fun `test scrubPath removes repo root prefix`() {
+        val result = scrubPath("/project/src/main.kt", "/project")
+        assertEquals("src/main.kt", result)
+    }
+
+    fun `test getRepoRoot returns null for unknown file path`() {
+        // Files outside a mapped git repo return null so the listener
+        // can exit early without creating a flag
+        val result = getRepoRoot(project, "/nonexistent/path/file.kt")
+        assertNull(result)
+    }
 }

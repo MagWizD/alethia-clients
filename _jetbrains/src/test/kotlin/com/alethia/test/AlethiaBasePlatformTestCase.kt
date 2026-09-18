@@ -1,5 +1,8 @@
 package com.alethia.test
 
+import com.alethia.model.DetectionEvent
+import com.alethia.model.EventSource
+import com.alethia.model.FlaggedRegion
 import com.alethia.session.AlethiaStateService
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.components.service
@@ -15,20 +18,17 @@ import java.io.File
  * Extends BasePlatformTestCase to provide a real IntelliJ environment including
  * a headless project, service container, and VCS system.
  *
- * What it takes care of...
- * - Initialize a real git repository in the temp project  directory so
- *   git-dependent code like getRepoRoot() resolves correctly.
- * - Loads test-specific logging config to keep test output separate
- *   from production alethia.log
- * - Provides a clean AlethiaStateService instance before each test
- * - Exposes registerVcsRoot() for listener tests that need git4idea
- *   to recognize the temp directory as a mapped VCS root.
+ * Note: BasePlatformTestCase reuses the same temp directory across all
+ * test classes in a single run, so git init runs before every test to
+ * ensure the repo is always present regardless of execution order
  */
 abstract class AlethiaBasePlatformTestCase : BasePlatformTestCase() {
 
     protected lateinit var stateService: AlethiaStateService
     protected lateinit var repoPath: String
+    // Stores VSC mappings before registerVCSRoot() so tearDown can restore them.
     private var originalMappings: List<VcsDirectoryMapping> = emptyList()
+
 
     /**
      * Initialize a real git repository in the temp project directory.
@@ -37,57 +37,23 @@ abstract class AlethiaBasePlatformTestCase : BasePlatformTestCase() {
      */
     private fun initializeGitRepo() {
         val dir = File(repoPath)
-        if (!dir.exists()) {
-            dir.mkdirs()  // ← create it if it doesn't exist
-        }
+        if (!dir.exists()) dir.mkdirs()  // ← create it if it doesn't exist
 
         listOf(
             listOf("git.exe", "init"),
             listOf("git", "config", "user.email", AlethiaTestConstants.TEST_USER_EMAIL),
             listOf("git", "config", "user.name", AlethiaTestConstants.TEST_USER_NAME)
         ).forEach { cmd ->
-            val process = ProcessBuilder(cmd)
+            ProcessBuilder(cmd)
                 .directory(File(repoPath))
                 .redirectErrorStream(true)
                 .inheritIO()
                 .start()
-            val output = process.inputStream.bufferedReader().readText()
-            val exitCode = process.waitFor()
-            println("${cmd.joinToString(" ")} → exit=$exitCode output=$output")
+                .waitFor()
         }
 
         // Create the .gitignore file
         File(repoPath, ".gitignore").createNewFile()
-    }
-
-
-    /**
-     * XXXX - NEEDS WORK -> Logs are still being written to alethia.log not alethia-test.log
-     *
-     * Load test logging configuration before the IntelliJ Platform
-     * initializes, this should make sure that LoggingFactory's FileHandler
-     * attaches to alethia-test.log rather than alethia.log.
-     * It is a static object because otherwise if it were a function
-     * called from setUp(), it would be called after the platform and
-     * LoggingFactory are already initialized.
-     */
-    companion object {
-        init {
-            // Prevent the JUL from searching for default logging property file
-            System.clearProperty("java.util.logging.config.file")
-            // Search for the logging-test.properties file within the project
-            val configStream = AlethiaBasePlatformTestCase::class.java
-                .getResourceAsStream("/logging-test.properties")
-            // If the stream is not empty, then...
-            if (configStream != null) {
-                // ...reset logger configuration...
-                java.util.logging.LogManager.getLogManager().reset()
-                // ...and load the test-logger configuration
-                java.util.logging.LogManager.getLogManager().readConfiguration(configStream)
-                // Make sure you close the stream!!
-                configStream.close()
-            }
-        }
     }
 
     /**
@@ -107,20 +73,13 @@ abstract class AlethiaBasePlatformTestCase : BasePlatformTestCase() {
 
     /**
      * Runs before each test.
-     * Sets repoPath from the platform-provided temp project directory,
-     * initializes the git repo and logging config, then provides a clean
-     * AlethiaStateService with no flags and no lastCommitSha.
+     * Gets repoPath from the platform temp directory, initializes the git
+     * repo, and resets AlethiaStateService to a clean state.
      */
     override fun setUp() {
-//        System.err.println("=== AlethiaBasePlatformTestCase.setUp START ===")
         super.setUp()
-//        System.err.println("=== after super.setUp ===")
-//        println("=== project.basePath = ${project.basePath} ===")
         repoPath = project.basePath!!
-//        println("=== repoPath set to: $repoPath ===")
-
         initializeGitRepo()
-
         stateService = project.service<AlethiaStateService>()
         stateService.clearFlags()
         stateService.lastCommitSha = null
@@ -128,8 +87,8 @@ abstract class AlethiaBasePlatformTestCase : BasePlatformTestCase() {
 
     /**
      * Runs after each test.
-     * Restores VCS directory mappings, clears session state,
-     * then delegates to BasePlatformTestCase for platform cleanup.
+     * Restores VCS mappings, clears session state, then delegates to
+     * BasePlatformTestCase for platform cleanup.
      */
     override fun tearDown() {
         ProjectLevelVcsManager.getInstance(project)
@@ -138,6 +97,8 @@ abstract class AlethiaBasePlatformTestCase : BasePlatformTestCase() {
         stateService.lastCommitSha = null
         super.tearDown()
     }
+
+    //  ----------------------  HELPER METHODS  -------------------------
 
     /**
      * Create a real file on disk inside the temp git repository.
@@ -152,5 +113,68 @@ abstract class AlethiaBasePlatformTestCase : BasePlatformTestCase() {
         return WriteCommandAction.runWriteCommandAction<VirtualFile>(project) {
             repoDir.createChildData(this, name)
         }
+    }
+
+    /**
+     * Builds FlaggedRegion with sensible test defaults.
+     * Override individual fields as needed per test.
+     */
+    protected fun buildFlag(filePath: String) = FlaggedRegion(
+        eventType = "EVENT_TYPE",
+        file = filePath,
+        startLine = 1,
+        endLine = 10,
+        charCount = 500,
+        rationale = "Large clipboard paste - 500 chars",
+        timeStamp = "2026-01-01T00:00:00Z"
+    )
+
+    /**
+     * Builds a DetectionEvent with sensible test defaults.
+     * Override charCount, source, filePath, or repoRoot as needed per test.
+     */
+    protected fun buildEvent(
+        charCount: Int,
+        source: EventSource,
+        filePath: String = "/project/src/Main.kt",
+        repoRoot: String = "/project"
+    ) = DetectionEvent(
+        filePath = filePath,
+        repoRoot = repoRoot,
+        charCount = charCount,
+        startLine = 1,
+        endLine = 1,
+        elapsedMs = 100,
+        source = source
+    )
+
+    /**
+     * Creates a commit with the specified message.
+     * Used for testing note creation.
+     * Runs the git add and commit commands, returns the HEAD SHA
+     * for reviewing generated flags.
+     */
+    protected fun makeCommit(message: String = "test commit"): String {
+        // Unique filename ensures each commit has a distinct SHA
+        File(repoPath, "test_${System.currentTimeMillis()}.kt")
+            .writeText("fun main() {}")
+
+        listOf(
+            listOf("git", "add", "."),
+            listOf("git", "commit", "-m", message)
+        ).forEach { cmd ->
+            ProcessBuilder(cmd)
+                .directory(File(repoPath))
+                .start()
+                .waitFor()
+        }
+
+        // Return the HEAD SHA
+        val process = ProcessBuilder("git", "rev-parse", "HEAD")
+            .directory(File(repoPath))
+            .start()
+        val sha = process.inputStream.bufferedReader().readText().trim()
+        process.waitFor()
+        return sha
     }
 }
