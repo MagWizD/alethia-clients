@@ -7,6 +7,10 @@ package com.alethia.config
  */
 object AlethiaConstants {
 
+    // THRESHOLDS ===========================================
+    /**  */
+    const val FOCUS_WINDOW_MS = 5000L
+
     // GIT NOTES ===========================================
     /** Git notes ref namespace used by Alethia */
     const val NOTES_REF = "refs/notes/alethia"
