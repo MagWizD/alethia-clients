@@ -8,10 +8,12 @@ data class AlethiaDocument(
 )
 
 // The wrapper that will hold the metadata of the Alethia note and all
-// submitted FlaggedRegions
+// submitted FlaggedRegions and ProjectEvents
 data class AlethiaNote(
     val version: String = AlethiaConstants.PLUGIN_VERSION,
     val generatedAt: String,
     val flagCount: Int,
-    val flaggedRegions: List<FlaggedRegion>
+    val eventCount: Int,
+    val flaggedRegions: List<FlaggedRegion>,
+    val projectEvents: List<ProjectEvent>
 )
