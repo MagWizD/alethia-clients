@@ -3,7 +3,7 @@ package com.alethia.model
 /**
  * Represents a single region of code flagged as potentially suspicious.
  * Instances accumulate during a session and are serialized into git note
- * on commit, then cleared. Schema matches the VSCode extension exactly.
+ * on commit, then cleared.
  */
 data class FlaggedRegion(
     var eventType: String = "",      // Standardized EventID
