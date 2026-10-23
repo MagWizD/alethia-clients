@@ -26,12 +26,12 @@ enum class EventType(val priority: Int) {
  * This keeps listeners code thin and decoupled from handler.
  */
 data class DetectionEvent(
-    val filePath: String,           // Absolute path of the file where the event occurred
-    val repoRoot: String,           // Path to the repo root on the local machine
-    val charCount: Int,             // Number of chars in teh insertion
-    val startLine: Int,             // Line where the insertion begins (1-indexed)
-    val endLine: Int,               // Lien where teh insertion ends (1-indexed)
-    val elapsedMs: Long,            // Time since last edit in milliseconds
+    val filePath: String = "",      // Absolute path of the file where the event occurred
+    val repoRoot: String = "",      // Path to the repo root on the local machine
+    val charCount: Int = -1,        // Number of chars in teh insertion
+    val startLine: Int = -1,        // Line where the insertion begins (1-indexed)
+    val endLine: Int = -1,          // Lien where teh insertion ends (1-indexed)
+    val elapsedMs: Long = -1L,      // Time since last edit in milliseconds
     val eventType: EventType,       // THe type of event that occurred
     val oldPath: String? = null,    // Original path of the file
     val newPath: String? = null,    // New path of the file
