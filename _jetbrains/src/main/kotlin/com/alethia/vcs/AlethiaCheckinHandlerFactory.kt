@@ -124,6 +124,7 @@ class AlethiaCheckinHandler(private val panel: CheckinProjectPanel) : CheckinHan
         try {
             // Retrieve all queued flags
             val newFlags = sessionState.getFlags()
+            val newEvents = sessionState.getEvents()
             // Read existing flags
             val existingFlags = readExistingFlags(repoPath, sha)
             // All flags
@@ -134,7 +135,9 @@ class AlethiaCheckinHandler(private val panel: CheckinProjectPanel) : CheckinHan
                 alethia = AlethiaNote(
                     generatedAt = java.time.Instant.now().toString(),
                     flagCount = allFlags.size,
-                    flaggedRegions = allFlags
+                    eventCount = newEvents.size,
+                    flaggedRegions = allFlags,
+                    projectEvents = newEvents
                 )
             )
             val noteContent = gson.toJson(document)
