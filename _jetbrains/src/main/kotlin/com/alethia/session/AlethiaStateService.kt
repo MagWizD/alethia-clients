@@ -2,6 +2,7 @@ package com.alethia.session
 
 import com.alethia.config.AlethiaConstants
 import com.alethia.model.FlaggedRegion
+import com.alethia.model.ProjectEvent
 import com.intellij.ide.util.PropertiesComponent
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.State
@@ -48,6 +49,7 @@ class AlethiaStateService(private val project : Project) :
       */
     class State {
         var flaggedRegions: MutableList<FlaggedRegion> = mutableListOf()
+        var projectEvents: MutableList<ProjectEvent> = mutableListOf()
     }
     // Current in-memory state, IntelliJ will read from/write to this first
     private var myState = State()
@@ -78,27 +80,33 @@ class AlethiaStateService(private val project : Project) :
     // Implement functions to update flags within the current state
 
     /**
-     * Adds a FlaggedRegion to the session queue.
-     * Converts to SerializableFlaggedRegion for storage.
+     * Adds a FlaggedRegion/ProjectEvent to the session queue.
      */
     fun addFlag(flag: FlaggedRegion) { myState.flaggedRegions.add(flag) }
+    fun addEvent(event: ProjectEvent) {myState.projectEvents.add(event) }
 
     /**
-     * Retrieves all queued flags as FlaggedRegion objects.
-     * Converts from SerializableFlaggedRegion back to FlaggedRegion
+     * Retrieves all queued flags as FlaggedRegion/ProjectEvent objects.
      */
     fun getFlags(): List<FlaggedRegion> { return myState.flaggedRegions.map { it } }
+    fun getEvents(): List<ProjectEvent> { return myState.projectEvents.map { it } }
 
     /**
-     * Tally and return the number of queued flags in the current session.
+     * Tally and return the number of queued flags and events in the current session.
      */
     fun flagCount(): Int { return myState.flaggedRegions.size }
+    fun projectEvent(): Int { return myState.projectEvents.size }
 
     /**
      * Clears all queued flags, called after they are written
      * to a git note on commit.
      */
     fun clearFlags() { myState.flaggedRegions.clear() }
+    fun clearEvents() { myState.projectEvents.clear() }
+    fun clearAll() {
+        clearFlags()
+        clearEvents()
+    }
 
     // -------------- Implement the lastCommitSha API ------------------
     // Implement functions to load and restore last commit sha
