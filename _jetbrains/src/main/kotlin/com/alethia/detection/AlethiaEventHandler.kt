@@ -1,7 +1,7 @@
 package com.alethia.detection
 
 import com.alethia.model.DetectionEvent
-import com.alethia.model.EventSource
+import com.alethia.model.EventType
 import com.alethia.model.FlaggedRegion
 import com.alethia.detection.rules.RuleEngine
 import com.alethia.session.AlethiaStateService
@@ -48,11 +48,11 @@ class AlethiaEventHandler(private val project: Project) {
 
         // Record paste events so any following DOCUMENT_CHANGE
         // events for matching file get suppressed
-        if (event.source == EventSource.CLIPBOARD_PASTE) {
+        if (event.eventType == EventType.LARGE_PASTE) {
             recentPastes[event.filePath] = System.currentTimeMillis()
         }
         // Suppress DOCUMENT_CHANGE if a paste just fired for this file
-        if (event.source == EventSource.DOCUMENT_CHANGE) {
+        if (event.eventType == EventType.LARGE_INSERTION) {
             val lastPaste = recentPastes[event.filePath] ?: 0L
             if (System.currentTimeMillis() - lastPaste < PASTE_WINDOW_MS) return
         }

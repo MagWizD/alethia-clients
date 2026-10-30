@@ -2,7 +2,7 @@ package com.alethia.detection.rules
 
 import com.alethia.config.DetectionConfig
 import com.alethia.model.DetectionEvent
-import com.alethia.model.EventSource
+import com.alethia.model.EventType
 
 /**
  * Flagrs large insertions that exceed the configured thresholds.
@@ -18,15 +18,24 @@ class LargePasteRule(private val config: DetectionConfig) : DetectionRule {
         // Skip ignored file patterns
         if (config.ignorePatterns.any { event.filePath.contains(it) }) return null
 
-        return when (event.source) {
-            EventSource.CLIPBOARD_PASTE -> RuleResult(
+        return when (event.eventType) {
+            EventType.LARGE_PASTE -> RuleResult(
                 eventType = "LARGE_PASTE",
                 rationale = "Large clipboard paste - ${event.charCount} chars pasted from clipboard."
             )
-            EventSource.DOCUMENT_CHANGE -> RuleResult(
+            EventType.LARGE_INSERTION -> RuleResult(
                 eventType = "LARGE_INSERTION",
                 rationale = "Large instant insertion - ${event.charCount} chars, source unknown."
             )
+            EventType.FOCUS_RESTORE_PASTE -> RuleResult(
+                eventType = "FOCUS_RESTORE_PASTE",
+                rationale = "Large clipboard paste within re-focus window - ${event.charCount} chars pasted from clipboard."
+            )
+
+            else -> {
+                // Return null, if no matches, then no results should be sent.
+                null
+            }
         }
     }
 }

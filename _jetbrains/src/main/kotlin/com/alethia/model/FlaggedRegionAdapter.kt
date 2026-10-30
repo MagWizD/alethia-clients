@@ -100,10 +100,10 @@ class ProjectEventAdapter : JsonSerializer<ProjectEvent>, JsonDeserializer<Proje
         }
 
         return ProjectEvent(
-            eventType = obj.get("eventType").asString ?: "",
-            rationale = obj.get("rationale").asString ?: "",
-            timeStamp = obj.get("timeStamp").asString ?: "",
-            details = details
+            eventType = obj.get("eventType")?.asString ?: "",
+            rationale = obj.get("rationale")?.asString ?: "",
+            timeStamp = obj.get("timeStamp")?.asString ?: "",
+            details = details.toMutableMap()
         )
     }
 }
